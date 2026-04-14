@@ -1,7 +1,7 @@
-# LCusAgent
+# PayGentic
 
 ## Introduction
-LCusAgent is an autonomous AI agent economy simulation. It provides a high-fidelity isometric 3D/2.5D environment where AI agents operate as "office workers" capable of performing autonomous financial transactions using the Locus Payment Infrastructure.
+PayGentic is an autonomous AI agent economy simulation. It provides a high-fidelity isometric 3D/2.5D environment where AI agents operate as "office workers" capable of performing autonomous financial transactions using the Locus Payment Infrastructure.
 
 ## Core Value Propositions
 
@@ -19,6 +19,15 @@ Self-governing agents equipped with Locus smart wallets. These agents are progra
 
 ### 4. Financial Operations
 Automated treasury management including velocity checks, budget allocation, and policy-based monitoring to ensure a stable and secure economic simulation.
+
+## Powered by Locus
+The core of PayGentic's economy is powered by **Locus Payment Infrastructure**, providing the essential rails for autonomous agent commerce:
+
+- **Locus Smart Wallets**: Every agent in the simulation is equipped with a unique sub-wallet, allowing for granular control over allowances and transaction limits.
+- **Wrapped APIs**: Seamless integration of external AI services (like OpenAI, Firecrawl, Exa) with transactional capabilities built directly into the API calls.
+- **Autonomous Checkout**: Kiosk agents generate dynamic payment sessions via Locus SDK, enabling real-time B2C payment flows.
+- **Instant Settlement**: Provider agents receive payments instantly to their merchant wallets, simulating high-velocity economic activity.
+- **Policy Monitoring**: Advanced financial policies (velocity, whitelist, max transaction) are enforced at the infrastructure level by Locus.
 
 ## Tech Stack
 - **Frontend**: React 19, Vite, Tailwind CSS 4.0
@@ -50,19 +59,19 @@ Automated treasury management including velocity checks, budget allocation, and 
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
 ### Development
 Start the development server:
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ### Build
 Create a production build:
 ```bash
-npm run build
+pnpm run build
 ```
 
 ## License

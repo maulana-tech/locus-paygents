@@ -25,6 +25,7 @@ import {
 import { Link } from 'react-router-dom';
 import { locusConfig } from '../config/locus-config';
 import '../styles/simulation.css';
+import { skillMetadata } from '../config/skill-metadata';
 
 // --- Types ---
 type SimulationMode = 'INDIVIDUAL' | 'COMPANY';
@@ -42,6 +43,15 @@ interface Agent {
   revenue: number;
   name: string;
   target?: { x: number; y: number };
+  memory?: {
+    lastPrices?: { service: string; price: number }[];
+    favoriteBooth?: string;
+  };
+  policy?: {
+    maxTransaction: number;
+    approvalThreshold: number;
+  };
+  skills: string[];
 }
 
 interface Transaction {
@@ -64,6 +74,12 @@ interface Beam {
 // --- Config ---
 const GRID_SIZE = 10;
 const TILE_SIZE = 64;
+const BOOTHS = [
+  { id: 'A1', x: 2, y: 2, service: 'firecrawl/scrape', name: 'Firecrawl Booth' },
+  { id: 'A2', x: 2, y: 6, service: 'exa/search', name: 'Exa Search Booth' },
+  { id: 'B1', x: 7, y: 2, service: 'openai/chat', name: 'OpenAI Booth' },
+  { id: 'B2', x: 7, y: 7, service: 'tasks/create', name: 'Task Booth' },
+];
 
 // --- Helper Functions ---
 const isoToScreen = (x: number, y: number) => {
@@ -74,7 +90,7 @@ const isoToScreen = (x: number, y: number) => {
 
 // --- Components ---
 
-const AgentCharacter = ({ agent }: { agent: Agent }) => {
+const AgentCharacter = ({ agent, onSelect }: { agent: Agent, onSelect?: (id: string) => void }) => {
   const { left, top } = isoToScreen(agent.x, agent.y);
   
   const getRoleClass = (role: AgentRole) => {
@@ -90,7 +106,7 @@ const AgentCharacter = ({ agent }: { agent: Agent }) => {
 
   return (
     <motion.div 
-      className={`agent-sprite ${agent.target ? 'walking' : 'idle'}`}
+      className={`agent-sprite ${agent.target ? 'walking' : 'idle'} ${agent.status === 'ERROR' ? 'error-shake' : ''}`}
       initial={false}
       animate={{ left, top }}
       transition={{ duration: 1.5, ease: "linear" }}
@@ -98,6 +114,48 @@ const AgentCharacter = ({ agent }: { agent: Agent }) => {
     >
       {/* Dynamic Status Ring */}
       <div className={`status-ring ${statusClass}`} />
+      
+      {/* Intent Bubble */}
+      <AnimatePresence>
+        {agent.target && agent.role === 'PROCUREMENT' && (
+          <motion.div 
+            initial={{ scale: 0, y: 10, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0, y: 10, opacity: 0 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] p-1 rounded-full shadow-xl z-30 flex items-center gap-1 px-2 py-0.5 whitespace-nowrap"
+          >
+            <span className="text-[8px] font-bold">RESEARCHING</span> 🔍
+          </motion.div>
+        )}
+        {agent.status === 'WORKING' && agent.skills.length > 0 && Math.random() < 0.3 && (
+            <motion.div 
+              initial={{ scale: 0, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0, y: 10, opacity: 0 }}
+              className="absolute -top-12 left-1/2 -translate-x-1/2 bg-primary text-black text-[10px] p-1 rounded-full shadow-xl z-30 flex items-center gap-1 px-2 py-0.5 whitespace-nowrap"
+            >
+              <Zap size={8} /> <span className="text-[7px] font-bold uppercase">{skillMetadata[agent.skills[0]]?.title || "Skill"}</span>
+            </motion.div>
+        )}
+        {agent.status === 'TRANSACTING' && (
+          <motion.div 
+            initial={{ scale: 0, y: 10, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] p-1 rounded-full shadow-xl z-30"
+          >
+            {agent.role === 'PROCUREMENT' ? '💰' : '🤝'}
+          </motion.div>
+        )}
+        {agent.status === 'ERROR' && (
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] p-1 rounded-full shadow-xl z-30"
+          >
+            🚫
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Character Visual - 3D Sprite */}
       <div className={`agent-character-sprite ${getRoleClass(agent.role)} relative`}>
@@ -118,6 +176,16 @@ const AgentCharacter = ({ agent }: { agent: Agent }) => {
           </div>
         )}
       </div>
+
+      {/* CLICKABLE HITBOX */}
+      <div 
+        className="absolute inset-0 cursor-pointer" 
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect?.(agent.id);
+        }}
+        style={{ width: '100%', height: '100%' }}
+      />
     </motion.div>
   );
 };
@@ -130,6 +198,7 @@ export function Simulation() {
   const [beams, setBeams] = useState<Beam[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
   // --- Swarm Lifecycle ---
   useEffect(() => {
@@ -137,18 +206,18 @@ export function Simulation() {
     const spawnAgents = () => {
       if (mode === 'INDIVIDUAL') {
         setAgents([
-          { id: 'i1', name: 'Personal-AI', role: 'CONSUMER', x: 2, y: 2, floor: 1, status: 'IDLE', balance: 50.00, revenue: 0 },
-          { id: 'i2', name: 'Freelancer', role: 'PROVIDER', x: 5, y: 5, floor: 1, status: 'IDLE', balance: 100.00, revenue: 0 },
-          { id: 'i3', name: 'Bot-V1', role: 'PROCUREMENT', x: 3, y: 6, floor: 1, status: 'IDLE', balance: 40.00, revenue: 0 },
+          { id: 'i1', name: 'Solo-Agent', role: 'CONSUMER', x: 2, y: 2, floor: 1, status: 'IDLE', balance: 50.00, revenue: 0, memory: { lastPrices: [] }, policy: { maxTransaction: 20, approvalThreshold: 10 }, skills: ['checkout.md', 'onboarding.md'] },
+          { id: 'i2', name: 'Dev-Agent', role: 'PROVIDER', x: 5, y: 5, floor: 1, status: 'IDLE', balance: 100.00, revenue: 0, skills: ['git-deploy.md', 'api-reference.md'] },
+          { id: 'i3', name: 'Buyer-Bot', role: 'PROCUREMENT', x: 3, y: 6, floor: 1, status: 'IDLE', balance: 40.00, revenue: 0, memory: { lastPrices: [] }, skills: ['agent-quickstart.md'] },
         ]);
         setCurrentFloor(1);
       } else {
         setAgents([
-          { id: 'c1', name: 'Lobby-Rep', role: 'CONSUMER', x: 1, y: 2, floor: 1, status: 'IDLE', balance: 500.00, revenue: 0 },
-          { id: 'c2', name: 'Provider-A', role: 'PROVIDER', x: 4, y: 4, floor: 2, status: 'IDLE', balance: 1000.00, revenue: 0 },
-          { id: 'c3', name: 'Procure-E', role: 'PROCUREMENT', x: 2, y: 2, floor: 2, status: 'IDLE', balance: 200.00, revenue: 0 },
-          { id: 'c4', name: 'Treasury-M', role: 'TREASURY', x: 4, y: 4, floor: 3, status: 'IDLE', balance: 10000.00, revenue: 0 },
-          { id: 'c5', name: 'Provider-B', role: 'PROVIDER', x: 6, y: 3, floor: 2, status: 'IDLE', balance: 1500.00, revenue: 0 },
+          { id: 'c1', name: 'Receptionist', role: 'CONSUMER', x: 1, y: 2, floor: 1, status: 'IDLE', balance: 500.00, revenue: 0, skills: ['onboarding.md'] },
+          { id: 'c2', name: 'Firecrawl-P', role: 'PROVIDER', x: BOOTHS[0].x, y: BOOTHS[0].y, floor: 2, status: 'IDLE', balance: 1000.00, revenue: 0, skills: ['git-deploy.md', 'logs.md'] },
+          { id: 'c3', name: 'Procure-X', role: 'PROCUREMENT', x: 2, y: 2, floor: 2, status: 'IDLE', balance: 200.00, revenue: 0, memory: { lastPrices: [] }, skills: ['deployment-workflows.md', 'monorepo.md'] },
+          { id: 'c4', name: 'Treasury-S', role: 'TREASURY', x: 4, y: 4, floor: 3, status: 'IDLE', balance: 10000.00, revenue: 0, skills: ['billing.md', 'troubleshooting.md', 'addons.md'] },
+          { id: 'c5', name: 'OpenAI-P', role: 'PROVIDER', x: BOOTHS[2].x, y: BOOTHS[2].y, floor: 2, status: 'IDLE', balance: 1500.00, revenue: 0, skills: ['api-reference.md', 'webhooks.md'] },
         ]);
         setCurrentFloor(2);
       }
@@ -158,44 +227,95 @@ export function Simulation() {
 
   // --- Simulation Loops ---
 
-  // 1. Movement Loop
+  // 1. Movement & AI Logic Loop
   useEffect(() => {
-    const moveInterval = setInterval(() => {
+    const aiInterval = setInterval(() => {
       setAgents(prev => prev.map(agent => {
-        if (agent.status !== 'IDLE') return agent;
-        if (Math.random() < 0.8) return agent; // Only move occasionally
+        // If transacting, stay put
+        if (agent.status === 'TRANSACTING' || agent.status === 'WORKING') return agent;
 
+        // --- PROCURE LOGIC: Window Shopping ---
+        if (agent.role === 'PROCUREMENT' && agent.status === 'IDLE' && agent.floor === currentFloor) {
+          // If no target, pick a random booth to 'survey'
+          if (!agent.target) {
+            const nextBooth = BOOTHS[Math.floor(Math.random() * BOOTHS.length)];
+            return { ...agent, target: { x: nextBooth.x, y: nextBooth.y } };
+          }
+          
+          // Move towards target
+          const dx = Math.sign(agent.target.x - agent.x);
+          const dy = Math.sign(agent.target.y - agent.y);
+          
+          // Arrived at target?
+          if (dx === 0 && dy === 0) {
+            // Survey logic: 'remember' price (simulated) then clear target to pick next
+            const updatedMemory = { ...agent.memory };
+            const lastPrices = updatedMemory.lastPrices ? [...updatedMemory.lastPrices] : [];
+            lastPrices.push({ service: 'survey', price: Math.random() });
+            
+            return { 
+              ...agent, 
+              target: undefined, 
+              memory: { ...updatedMemory, lastPrices } 
+            };
+          }
+
+          return { ...agent, x: agent.x + dx, y: agent.y + dy };
+        }
+
+        // --- REFILL LOGIC: Low Balance ---
+        if (agent.balance < 10 && agent.status === 'IDLE') {
+          // Move to Treasury on Floor 3 (simulated floor change if reached elevator)
+          if (agent.floor !== 3) {
+            // Target elevator (centerish)
+            const elevator = { x: 5, y: 5 };
+            const dx = Math.sign(elevator.x - agent.x);
+            const dy = Math.sign(elevator.y - agent.y);
+            if (dx === 0 && dy === 0) return { ...agent, floor: 3, x: 5, y: 5 }; // Jumps to floor 3
+            return { ...agent, x: agent.x + dx, y: agent.y + dy };
+          } else {
+            // On Floor 3, target Treasury
+            const treasury = { x: 4, y: 4 };
+            const dx = Math.sign(treasury.x - agent.x);
+            const dy = Math.sign(treasury.y - agent.y);
+            if (dx === 0 && dy === 0) return { ...agent, balance: 200, floor: 2 }; // Refilled!
+            return { ...agent, x: agent.x + dx, y: agent.y + dy };
+          }
+        }
+
+        // Standard Random Movement for IDLE
+        if (Math.random() < 0.7) return agent;
         const dx = Math.floor(Math.random() * 3) - 1;
         const dy = Math.floor(Math.random() * 3) - 1;
-        const newX = Math.max(1, Math.min(GRID_SIZE - 2, agent.x + dx));
-        const newY = Math.max(1, Math.min(GRID_SIZE - 2, agent.y + dy));
-
-        return { ...agent, x: newX, y: newY };
+        return { ...agent, x: Math.max(0, Math.min(GRID_SIZE-1, agent.x + dx)), y: Math.max(0, Math.min(GRID_SIZE-1, agent.y + dy)) };
       }));
-    }, 2000);
-    return () => clearInterval(moveInterval);
-  }, []);
+    }, 1000);
+    return () => clearInterval(aiInterval);
+  }, [currentFloor]);
 
-  // 2. Transaction Loop (A2A)
+  // 2. Transaction Loop (A2A) with Decision Logic
   useEffect(() => {
     const txInterval = setInterval(() => {
-      if (Math.random() < 0.7) return;
-
       setAgents(prev => {
-        const potentialBuyers = prev.filter(a => a.role === 'PROCUREMENT' && a.status === 'IDLE');
+        const potentialBuyers = prev.filter(a => a.role === 'PROCUREMENT' && a.status === 'IDLE' && !a.target && a.floor === currentFloor);
         const potentialSellers = prev.filter(a => a.role === 'PROVIDER' && a.floor === currentFloor);
         
         if (potentialBuyers.length && potentialSellers.length) {
           const buyer = potentialBuyers[0];
-          const seller = potentialSellers[Math.floor(Math.random() * potentialSellers.length)];
-          const service = locusConfig.wrappedApis[Math.floor(Math.random() * 3)];
-          
-          // Execute Simulation Logic
-          handleTransaction(buyer, seller, service.basePrice, service.name);
+          // AGENTIC DECISION: Buy if we've surveyed at least one booth (simulated by memory length)
+          if (buyer.memory && buyer.memory.lastPrices && buyer.memory.lastPrices.length > 0) {
+            const seller = potentialSellers[Math.floor(Math.random() * potentialSellers.length)];
+            const service = locusConfig.wrappedApis[Math.floor(Math.random() * 3)];
+            
+            // Execute Simulation Logic
+            handleTransaction(buyer, seller, service.basePrice, service.name);
+            // Clear memory after purchase
+            buyer.memory.lastPrices = [];
+          }
         }
         return prev;
       });
-    }, 5000);
+    }, 3000);
     return () => clearInterval(txInterval);
   }, [currentFloor]);
 
@@ -246,6 +366,26 @@ export function Simulation() {
 
   const totalEconomyRevenue = useMemo(() => agents.reduce((sum, a) => sum + a.revenue, 0), [agents]);
 
+  // 3. Treasury Monitoring Loop
+  useEffect(() => {
+    const auditInterval = setInterval(() => {
+      setAgents(prev => {
+        const treasury = prev.find(a => a.role === 'TREASURY');
+        if (!treasury || treasury.floor !== currentFloor) return prev;
+
+        return prev.map(agent => {
+          // Anomaly: If agent balance/revenue moved too fast (simulated check)
+          if (agent.role !== 'TREASURY' && Math.random() < 0.05) {
+             console.log(`Treasury Alert: Anomaly detected for ${agent.name}`);
+             return { ...agent, status: 'ERROR' };
+          }
+          return agent;
+        });
+      });
+    }, 10000);
+    return () => clearInterval(auditInterval);
+  }, [currentFloor]);
+
   return (
     <div className={`sim-container text-white select-none ${mode === 'INDIVIDUAL' ? 'mode-individual' : 'mode-company'}`}>
       {/* Background Ambience */}
@@ -259,7 +399,7 @@ export function Simulation() {
         </Link>
         <div className="glass-panel px-6 py-3 flex items-center gap-4 border-l-4 border-primary">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">PAYGENTS</h1>
+            <h1 className="text-xl font-bold tracking-tight">PAYGENTIC</h1>
             <p className="text-[9px] text-white/40 uppercase tracking-[0.2em]">Autonomous Agent Simulation</p>
           </div>
           <div className="w-px h-8 bg-white/10 mx-2" />
@@ -422,9 +562,30 @@ export function Simulation() {
           {/* Agents */}
           <AnimatePresence>
             {agents.filter(a => a.floor === currentFloor).map(agent => (
-              <AgentCharacter key={agent.id} agent={agent} />
+              <AgentCharacter 
+      key={agent.id} 
+      agent={agent} 
+      onSelect={(id) => setSelectedAgentId(prev => prev === id ? null : id)}
+    />
             ))}
           </AnimatePresence>
+
+          {/* Booth Labels */}
+          {currentFloor === 2 && BOOTHS.map(booth => {
+            const { left, top } = isoToScreen(booth.x, booth.y);
+            return (
+              <div 
+                key={booth.id} 
+                className="absolute pointer-events-none flex flex-col items-center"
+                style={{ left, top, transform: 'translate(-50%, -150%)', zIndex: 10 }}
+              >
+                <div className="bg-primary/20 border border-primary/40 px-2 py-0.5 rounded text-[8px] font-bold text-primary uppercase">
+                  Booth {booth.id}
+                </div>
+                <div className="text-[7px] text-white/40 mt-0.5">{booth.name}</div>
+              </div>
+            );
+          })}
           
           {/* Visual Floor Indicators */}
           <div className="absolute top-[350px] left-1/2 -translate-x-1/2 text-center pointer-events-none">
@@ -479,6 +640,59 @@ export function Simulation() {
 
       {/* Scanline Effect */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_100%),linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(0,212,255,.03),rgba(0,255,0,.01),rgba(0,212,255,.03))] bg-[length:100%_2px,3px_100%] opacity-20" />
+
+      {/* --- AGENT SKILL PANEL --- */}
+      <AnimatePresence>
+        {selectedAgentId && (
+          <motion.div 
+            initial={{ x: 400 }}
+            animate={{ x: 0 }}
+            exit={{ x: 400 }}
+            className="absolute right-8 top-1/2 -translate-y-1/2 w-80 glass-panel p-6 z-50 border-r-0 border-l-4 border-primary"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold">{agents.find(a => a.id === selectedAgentId)?.name}</h3>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest">{agents.find(a => a.id === selectedAgentId)?.role} SKILLSET</p>
+              </div>
+              <button onClick={() => setSelectedAgentId(null)} className="text-white/20 hover:text-white transition-all">
+                <Users size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {agents.find(a => a.id === selectedAgentId)?.skills.map(skillFile => {
+                const meta = skillMetadata[skillFile];
+                if (!meta) return null;
+                const Icon = meta.icon;
+
+                return (
+                  <div key={skillFile} className="bg-white/5 p-4 rounded-xl border border-white/5 hover:border-white/10 transition-all group">
+                    <div className="flex gap-4 mb-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
+                        <Icon size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-primary transition-all">{meta.title}</h4>
+                        <p className="text-[10px] text-white/40 font-mono tracking-tighter">{skillFile}</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-white/60 leading-relaxed italic">
+                      {meta.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <button className="w-full bg-primary/10 text-primary py-3 rounded-lg text-[10px] font-bold tracking-[0.2em] hover:bg-primary hover:text-black transition-all">
+                REQUEST ACCESS
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -6,16 +6,16 @@ import Lenis from "lenis";
 
 const Navbar = () => (
   <nav className="fixed top-0 w-full flex justify-between items-center px-8 py-6 bg-surface/80 backdrop-blur-xl z-50 border-b border-outline-variant/10">
-    <div className="text-2xl font-bold tracking-tighter text-white uppercase font-body">LCusAgent</div>
+    <div className="text-2xl font-bold tracking-tighter text-white uppercase font-body">PayGentic</div>
     <div className="hidden md:flex gap-8 items-center font-label text-sm font-medium">
       <Link className="text-secondary border-b-2 border-secondary pb-1" to="/">Home</Link>
-      <a className="text-white hover:text-primary transition-colors duration-200" href="#">Newsletter</a>
-      <a className="text-white hover:text-primary transition-colors duration-200" href="#">Podcast</a>
-      <a className="text-white hover:text-primary transition-colors duration-200" href="#">About</a>
+      <a className="text-white hover:text-primary transition-colors duration-200" href="#">Infrastructure</a>
+      <a className="text-white hover:text-primary transition-colors duration-200" href="#">Ecosystem</a>
+      <a className="text-white hover:text-primary transition-colors duration-200" href="#">Documentation</a>
       <Link className="text-white hover:text-primary transition-colors duration-200" to="/simulation">Simulation</Link>
     </div>
     <button className="bg-primary text-black px-6 py-2 text-xs font-bold tracking-widest hover:bg-primary-dim transition-all active:scale-95 duration-100">
-      LET'S BE FRENS!
+      SOLVE WITH AGENTS!
     </button>
   </nav>
 );
@@ -30,7 +30,7 @@ const Hero = () => (
         transition={{ duration: 0.8 }}
       >
         <h1 className="text-6xl md:text-8xl font-headline font-light leading-tight tracking-tight text-white mb-8">
-          The first autonomous AI agent economy <span className="italic text-primary">simulation</span>
+          The first autonomous AI agent economy <span className="italic text-primary">simulation</span> powered by <span className="text-secondary">Locus</span>
         </h1>
         <div className="flex gap-4">
           <button className="bg-secondary text-on-secondary px-8 py-4 text-lg font-bold hover:brightness-110 transition-all active:scale-95">
@@ -64,6 +64,8 @@ const Marquee = () => (
       {[...Array(4)].map((_, i) => (
         <div key={i} className="flex items-center gap-8 px-4 font-bold text-3xl md:text-4xl text-black tracking-widest uppercase">
           <span>VISUAL COMMERCE</span>
+          <span className="text-white">•</span>
+          <span>POWERED BY LOCUS</span>
           <span className="text-white">•</span>
           <span>SIMULATE ECONOMY</span>
           <span className="text-white">•</span>
@@ -172,7 +174,7 @@ const Team = () => (
     <div className="container mx-auto px-8">
       <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
         <h2 className="text-6xl md:text-8xl font-headline text-white leading-tight uppercase">
-          THE<br />LCusAgent<br />SQUAD
+          THE<br />PayGentic<br />SQUAD
         </h2>
         <a href="#" className="text-primary font-bold text-lg font-label border-b border-primary pb-2 hover:text-white hover:border-white transition-all">
           Intro THE SQUAD
@@ -208,7 +210,7 @@ const Contact = () => (
           <h2 className="text-6xl md:text-7xl font-headline text-white mb-8">Ready to initiate?</h2>
           <p className="text-gray-400 text-xl leading-relaxed font-body">Drop us a line and let's discuss how we can build the future of the internet together.</p>
           <div className="mt-12 space-y-4">
-            <p className="text-secondary font-bold font-label text-lg">HELLO@LCusAgent.XYZ</p>
+            <p className="text-secondary font-bold font-label text-lg">HELLO@PayGentic.XYZ</p>
             <p className="text-white font-label tracking-widest uppercase">Yogyakarta, Indonesia</p>
           </div>
         </div>
@@ -241,7 +243,7 @@ const Footer = () => (
     <div className="container mx-auto px-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
         <div>
-          <div className="text-4xl font-bold tracking-tighter text-secondary uppercase mb-8 font-body">LCusAgent</div>
+          <div className="text-4xl font-bold tracking-tighter text-secondary uppercase mb-8 font-body">PayGentic</div>
           <p className="text-gray-400 max-w-sm font-body leading-relaxed text-lg">
             An economy simulation built for the next evolution of human coordination and autonomous expression.
           </p>
@@ -259,10 +261,10 @@ const Footer = () => (
           <div>
             <h5 className="font-label text-white font-bold uppercase mb-6 tracking-widest text-sm">Explore</h5>
             <ul className="space-y-4 text-gray-400 font-label">
-              <li><a className="hover:text-white transition-all" href="#">Projects</a></li>
-              <li><a className="hover:text-white transition-all" href="#">Mirror</a></li>
+              <li><a className="hover:text-white transition-all" href="#">Documentation</a></li>
+              <li><a className="hover:text-white transition-all" href="#">Marketplace</a></li>
               <li><a className="hover:text-white transition-all" href="#">GitHub</a></li>
-              <li><a className="hover:text-white transition-all" href="#">Careers</a></li>
+              <li><a className="hover:text-white transition-all" href="#">References</a></li>
             </ul>
           </div>
         </div>
