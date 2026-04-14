@@ -1,0 +1,496 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Users, 
+  ShoppingBag, 
+  ShieldCheck, 
+  Zap, 
+  LayoutGrid, 
+  Layers,
+  Activity,
+  Home,
+  User,
+  Building2,
+  QrCode,
+  AlertCircle,
+  Briefcase,
+  Headset,
+  Calculator,
+  Wifi,
+  History,
+  TrendingUp,
+  CreditCard,
+  ArrowRight
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { locusConfig } from '../config/locus-config';
+import '../styles/simulation.css';
+
+// --- Types ---
+type SimulationMode = 'INDIVIDUAL' | 'COMPANY';
+type AgentRole = 'CONSUMER' | 'PROVIDER' | 'PROCUREMENT' | 'TREASURY';
+type AgentStatus = 'IDLE' | 'WORKING' | 'TRANSACTING' | 'PENDING' | 'ERROR';
+
+interface Agent {
+  id: string;
+  role: AgentRole;
+  x: number;
+  y: number;
+  floor: number;
+  status: AgentStatus;
+  balance: number;
+  revenue: number;
+  name: string;
+  target?: { x: number; y: number };
+}
+
+interface Transaction {
+  id: string;
+  from: string;
+  fromId: string;
+  to: string;
+  toId: string;
+  amount: number;
+  timestamp: number;
+  service: string;
+}
+
+interface Beam {
+  id: string;
+  fromPos: { x: number; y: number };
+  toPos: { x: number; y: number };
+}
+
+// --- Config ---
+const GRID_SIZE = 10;
+const TILE_SIZE = 64;
+
+// --- Helper Functions ---
+const isoToScreen = (x: number, y: number) => {
+  const left = (x - y) * (TILE_SIZE / 2);
+  const top = (x + y) * (TILE_SIZE / 4);
+  return { left: `calc(50% + ${left}px)`, top: `calc(50% + ${top}px)` };
+};
+
+// --- Components ---
+
+const AgentCharacter = ({ agent }: { agent: Agent }) => {
+  const { left, top } = isoToScreen(agent.x, agent.y);
+  
+  const getRoleTheme = (role: AgentRole) => {
+    switch(role) {
+      case 'CONSUMER': return { color: '#00d4ff', icon: <Headset size={16} />, accessory: 'Headset' };
+      case 'PROVIDER': return { color: '#ffd700', icon: <Wifi size={16} />, accessory: 'Antenna' };
+      case 'PROCUREMENT': return { color: '#ff00ff', icon: <Briefcase size={16} />, accessory: 'Briefcase' };
+      case 'TREASURY': return { color: '#00c853', icon: <Calculator size={16} />, accessory: 'Vault Key' };
+    }
+  };
+
+  const theme = getRoleTheme(agent.role);
+  const statusClass = agent.status.toLowerCase();
+
+  return (
+    <motion.div 
+      className={`agent-sprite ${agent.target ? 'walking' : 'idle'}`}
+      initial={false}
+      animate={{ left, top }}
+      transition={{ duration: 1.5, ease: "linear" }}
+      style={{ zIndex: 20, transform: 'translate(-50%, -85%)' }}
+    >
+      {/* Dynamic Status Ring */}
+      <div className={`status-ring ${statusClass}`} />
+      
+      {/* Character Visual */}
+      <div className="relative w-12 h-14 flex items-center justify-center">
+        {/* Agent "Body" */}
+        <div 
+          className="w-8 h-10 rounded-lg flex items-center justify-center text-white border border-white/20"
+          style={{ 
+            background: `linear-gradient(135deg, ${theme.color}, #121620)`,
+            boxShadow: `0 0 20px ${theme.color}44`
+          }}
+        >
+          {theme.icon}
+        </div>
+
+        {/* Floating Tag */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
+          <div className="whitespace-nowrap bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold border border-white/10 uppercase tracking-tighter">
+            {agent.name}
+          </div>
+          <div className="text-[10px] font-mono text-primary font-bold">
+            {agent.balance.toFixed(2)}
+          </div>
+        </div>
+
+        {/* Mode Indicator Accessory */}
+        {agent.status === 'PENDING' && (
+          <div className="absolute -right-2 top-0 bg-purple-600 text-white p-1 rounded-full animate-pulse shadow-lg">
+            <Activity size={10} />
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+export function Simulation() {
+  const [mode, setMode] = useState<SimulationMode>('INDIVIDUAL');
+  const [currentFloor, setCurrentFloor] = useState(1);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [beams, setBeams] = useState<Beam[]>([]);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // --- Swarm Lifecycle ---
+  useEffect(() => {
+    // Clear and respawn when mode changes
+    const spawnAgents = () => {
+      if (mode === 'INDIVIDUAL') {
+        setAgents([
+          { id: 'i1', name: 'Personal-AI', role: 'CONSUMER', x: 2, y: 2, floor: 1, status: 'IDLE', balance: 50.00, revenue: 0 },
+          { id: 'i2', name: 'Freelancer', role: 'PROVIDER', x: 5, y: 5, floor: 1, status: 'IDLE', balance: 100.00, revenue: 0 },
+          { id: 'i3', name: 'Bot-V1', role: 'PROCUREMENT', x: 3, y: 6, floor: 1, status: 'IDLE', balance: 40.00, revenue: 0 },
+        ]);
+        setCurrentFloor(1);
+      } else {
+        setAgents([
+          { id: 'c1', name: 'Lobby-Rep', role: 'CONSUMER', x: 1, y: 2, floor: 1, status: 'IDLE', balance: 500.00, revenue: 0 },
+          { id: 'c2', name: 'Provider-A', role: 'PROVIDER', x: 4, y: 4, floor: 2, status: 'IDLE', balance: 1000.00, revenue: 0 },
+          { id: 'c3', name: 'Procure-E', role: 'PROCUREMENT', x: 2, y: 2, floor: 2, status: 'IDLE', balance: 200.00, revenue: 0 },
+          { id: 'c4', name: 'Treasury-M', role: 'TREASURY', x: 4, y: 4, floor: 3, status: 'IDLE', balance: 10000.00, revenue: 0 },
+          { id: 'c5', name: 'Provider-B', role: 'PROVIDER', x: 6, y: 3, floor: 2, status: 'IDLE', balance: 1500.00, revenue: 0 },
+        ]);
+        setCurrentFloor(2);
+      }
+    };
+    spawnAgents();
+  }, [mode]);
+
+  // --- Simulation Loops ---
+
+  // 1. Movement Loop
+  useEffect(() => {
+    const moveInterval = setInterval(() => {
+      setAgents(prev => prev.map(agent => {
+        if (agent.status !== 'IDLE') return agent;
+        if (Math.random() < 0.8) return agent; // Only move occasionally
+
+        const dx = Math.floor(Math.random() * 3) - 1;
+        const dy = Math.floor(Math.random() * 3) - 1;
+        const newX = Math.max(1, Math.min(GRID_SIZE - 2, agent.x + dx));
+        const newY = Math.max(1, Math.min(GRID_SIZE - 2, agent.y + dy));
+
+        return { ...agent, x: newX, y: newY };
+      }));
+    }, 2000);
+    return () => clearInterval(moveInterval);
+  }, []);
+
+  // 2. Transaction Loop (A2A)
+  useEffect(() => {
+    const txInterval = setInterval(() => {
+      if (Math.random() < 0.7) return;
+
+      setAgents(prev => {
+        const potentialBuyers = prev.filter(a => a.role === 'PROCUREMENT' && a.status === 'IDLE');
+        const potentialSellers = prev.filter(a => a.role === 'PROVIDER' && a.floor === currentFloor);
+        
+        if (potentialBuyers.length && potentialSellers.length) {
+          const buyer = potentialBuyers[0];
+          const seller = potentialSellers[Math.floor(Math.random() * potentialSellers.length)];
+          const service = locusConfig.wrappedApis[Math.floor(Math.random() * 3)];
+          
+          // Execute Simulation Logic
+          handleTransaction(buyer, seller, service.basePrice, service.name);
+        }
+        return prev;
+      });
+    }, 5000);
+    return () => clearInterval(txInterval);
+  }, [currentFloor]);
+
+  const handleTransaction = useCallback((buyer: Agent, seller: Agent, amount: number, service: string) => {
+    console.log(`Starting transaction: ${buyer.name} -> ${seller.name} (${amount} USDC)`);
+    
+    // 1. Show Beam
+    const beamId = Math.random().toString(36).substr(2, 9);
+    setBeams(prev => [...prev, { id: beamId, fromPos: { x: buyer.x, y: buyer.y }, toPos: { x: seller.x, y: seller.y } }]);
+    
+    // 2. Update status
+    setAgents(prev => prev.map(a => {
+      if (a.id === buyer.id) return { ...a, status: 'TRANSACTING' };
+      if (a.id === seller.id) return { ...a, status: 'WORKING' };
+      return a;
+    }));
+
+    // 3. Complete Transaction after 2s
+    setTimeout(() => {
+      setBeams(prev => prev.filter(b => b.id !== beamId));
+      
+      setAgents(prev => prev.map(a => {
+        if (a.id === buyer.id) return { ...a, status: 'IDLE', balance: a.balance - amount };
+        if (a.id === seller.id) return { ...a, status: 'IDLE', balance: a.balance + amount, revenue: a.revenue + amount };
+        return a;
+      }));
+
+      setTransactions(prev => [{
+        id: beamId,
+        from: buyer.name,
+        fromId: buyer.id,
+        to: seller.name,
+        toId: seller.id,
+        amount,
+        timestamp: Date.now(),
+        service
+      }, ...prev].slice(0, 10));
+
+      // Trigger Checkout popup for individual mode simulation
+      if (mode === 'INDIVIDUAL' && Math.random() > 0.5) {
+        setShowCheckout(true);
+        setTimeout(() => setShowCheckout(false), 4000);
+      }
+    }, 2000);
+  }, [mode]);
+
+  // --- Rendering Helpers ---
+
+  const totalEconomyRevenue = useMemo(() => agents.reduce((sum, a) => sum + a.revenue, 0), [agents]);
+
+  return (
+    <div className="sim-container text-white select-none">
+      {/* Background Ambience */}
+      <div className="absolute inset-0 bg-[#0a0d14]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,212,255,0.05),transparent)] pointer-events-none" />
+
+      {/* --- HUD: NAVIGATION & BRAND --- */}
+      <div className="absolute top-8 left-8 z-50 flex items-center gap-4">
+        <Link to="/" className="w-12 h-12 glass-panel flex items-center justify-center text-white/60 hover:text-primary transition-all">
+          <Home size={20} />
+        </Link>
+        <div className="glass-panel px-6 py-3 flex items-center gap-4 border-l-4 border-primary">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">PAYGENTS</h1>
+            <p className="text-[9px] text-white/40 uppercase tracking-[0.2em]">Autonomous Agent Simulation</p>
+          </div>
+          <div className="w-px h-8 bg-white/10 mx-2" />
+          <div className="flex bg-black/40 rounded-full p-1 border border-white/10">
+            <button 
+              onClick={() => setMode('INDIVIDUAL')}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-2 ${mode === 'INDIVIDUAL' ? 'bg-primary text-black' : 'text-white/40 hover:text-white'}`}
+            >
+              <User size={12} /> INDIVIDUAL
+            </button>
+            <button 
+              onClick={() => setMode('COMPANY')}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-2 ${mode === 'COMPANY' ? 'bg-primary text-black' : 'text-white/40 hover:text-white'}`}
+            >
+              <Building2 size={12} /> COMPANY
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* --- HUD: STATS --- */}
+      <div className="absolute top-8 right-8 z-50 flex flex-col gap-4">
+        <div className="glass-panel p-6 w-80">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold mb-1">Economy Activity</p>
+              <h2 className="text-3xl font-mono tracking-tighter text-secondary">
+                {totalEconomyRevenue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+              </h2>
+            </div>
+            <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
+              <TrendingUp size={24} />
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-secondary"
+                initial={{ width: 0 }}
+                animate={{ width: '65%' }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] font-bold text-white/40 tracking-wider">
+              <span>SYSTEM LOAD: 42%</span>
+              <span>ALIVE AGENTS: {agents.length}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction History Small Panel */}
+        <button 
+          onClick={() => setHistoryOpen(!historyOpen)}
+          className="glass-panel p-4 flex items-center justify-between hover:bg-white/5 transition-all text-white/60"
+        >
+          <div className="flex items-center gap-3">
+            <History size={16} />
+            <span className="text-xs font-bold uppercase tracking-widest">Live Ledger</span>
+          </div>
+          <motion.div animate={{ rotate: historyOpen ? 180 : 0 }}>
+            <Activity size={14} />
+          </motion.div>
+        </button>
+
+        <AnimatePresence>
+          {historyOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="glass-panel p-4 w-80 space-y-3"
+            >
+              {transactions.length === 0 && <p className="text-[10px] text-white/20 italic">Awaiting commerce...</p>}
+              {transactions.map(tx => (
+                <div key={tx.id} className="text-[10px] font-mono flex items-center gap-2 p-2 bg-white/5 border border-white/5 rounded">
+                  <span className="text-primary">{tx.from}</span>
+                  <ArrowRight size={8} />
+                  <span className="text-white/60">{tx.to}</span>
+                  <span className="ml-auto text-secondary font-bold">+{tx.amount}</span>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* --- HUD: FLOOR CONTROLS (Only Company Mode) --- */}
+      {mode === 'COMPANY' && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
+          <div className="glass-panel px-8 py-4 flex items-center gap-8">
+            {[1, 2, 3].map(f => (
+              <React.Fragment key={f}>
+                <button 
+                  onClick={() => setCurrentFloor(f)}
+                  className={`flex flex-col items-center gap-1 transition-all ${currentFloor === f ? 'text-primary' : 'text-white/40 hover:text-white'}`}
+                >
+                  {f === 1 && <LayoutGrid size={20} />}
+                  {f === 2 && <Layers size={20} />}
+                  {f === 3 && <ShieldCheck size={20} />}
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Floor {f}</span>
+                </button>
+                {f < 3 && <div className="w-px h-8 bg-white/10" />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* --- SIMULATION STAGE --- */}
+      <div className="w-full h-full flex items-center justify-center overflow-hidden">
+        <div className="relative">
+          {/* Isometric Diamond Grid */}
+          <div className="relative">
+            {Array.from({ length: GRID_SIZE }).map((_, i) => 
+              Array.from({ length: GRID_SIZE }).map((_, j) => {
+                const { left, top } = isoToScreen(i, j);
+                return (
+                  <div 
+                    key={`${i}-${j}`}
+                    className="absolute border-[0.5px] border-white/10"
+                    style={{
+                      width: TILE_SIZE,
+                      height: TILE_SIZE / 2,
+                      left, top,
+                      transform: 'translate(-50%, -50%)',
+                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                      background: 'rgba(255,255,255,0.02)'
+                    }}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          {/* Transaction Beams */}
+          <AnimatePresence>
+            {beams.map(beam => {
+              const from = isoToScreen(beam.fromPos.x, beam.fromPos.y);
+              const to = isoToScreen(beam.toPos.x, beam.toPos.y);
+              
+              // Simplified line calculation between isometric points
+              return (
+                <motion.div 
+                  key={beam.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="transaction-beam"
+                  style={{
+                    left: from.left,
+                    top: from.top,
+                    width: '150px', // Visual approximation
+                    transform: `rotateZ(-30deg) translate(20px, -10px)`, // Iso adjustment
+                  }}
+                />
+              );
+            })}
+          </AnimatePresence>
+
+          {/* Agents */}
+          <AnimatePresence>
+            {agents.filter(a => a.floor === currentFloor).map(agent => (
+              <AgentCharacter key={agent.id} agent={agent} />
+            ))}
+          </AnimatePresence>
+          
+          {/* Visual Floor Indicators */}
+          <div className="absolute top-[350px] left-1/2 -translate-x-1/2 text-center pointer-events-none">
+            <h2 className="text-8xl font-black tracking-tighter italic uppercase text-white/[0.03] select-none">
+              {mode === 'INDIVIDUAL' ? "Freelance Swarm" : (
+                currentFloor === 1 ? "Lobby" : currentFloor === 2 ? "Marketplace" : "Financial Ops"
+              )}
+            </h2>
+          </div>
+        </div>
+      </div>
+
+      {/* --- LOCUS MODALS --- */}
+      <AnimatePresence>
+        {showCheckout && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="locus-modal w-80 font-body"
+          >
+            <div className="flex items-center gap-2 mb-4 text-primary font-bold">
+              <QrCode size={20} />
+              <span className="tracking-widest text-[10px] uppercase">Locus Checkout SDK</span>
+            </div>
+            <h3 className="text-xl font-bold mb-2">Complete Purchase</h3>
+            <p className="text-xs text-black/50 mb-4 font-mono">Session: a2a_sim_{Math.random().toString(36).substr(2,4)}</p>
+            
+            <div className="qr-placeholder">
+              <div className="flex flex-col items-center gap-2 text-black/20">
+                <Users size={48} />
+                <span className="text-[10px] font-bold">SCAN TO PAY</span>
+              </div>
+            </div>
+            
+            <div className="flex bg-black/5 p-4 rounded-xl items-center gap-3 text-left">
+              <div className="w-10 h-10 bg-primary/20 rounded flex items-center justify-center text-primary">
+                <CreditCard size={20} />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-black/40 uppercase">Total amount</p>
+                <p className="text-lg font-bold">0.05 <span className="text-xs">USDC</span></p>
+              </div>
+            </div>
+            
+            <button className="w-full bg-black text-white py-3 rounded-lg mt-4 font-bold text-sm tracking-widest hover:brightness-110 active:scale-95 transition-all">
+              SIMULATE CONFIRMATION
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scanline Effect */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_100%),linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(0,212,255,.03),rgba(0,255,0,.01),rgba(0,212,255,.03))] bg-[length:100%_2px,3px_100%] opacity-20" />
+    </div>
+  );
+}

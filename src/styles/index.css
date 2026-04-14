@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Space+Grotesk:wght@300..700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Newsreader", serif;
+  --font-body: "Space Grotesk", sans-serif;
+  --font-label: "Space Grotesk", sans-serif;
+
+  --color-surface: #0e0e0e;
+  --color-surface-container: #191919;
+  --color-surface-container-low: #131313;
+  --color-surface-container-high: #1f1f1f;
+  --color-primary: #c39bff;
+  --color-primary-dim: #914cf2;
+  --color-secondary: #d8ef00;
+  --color-on-secondary: #4e5700;
+  --color-outline-variant: #484848;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-white font-body selection:bg-secondary selection:text-on-secondary;
+  }
+}
+
+@layer utilities {
+  .grid-pattern {
+    background-image: radial-gradient(circle, #484848 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
