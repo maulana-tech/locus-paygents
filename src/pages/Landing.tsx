@@ -6,7 +6,7 @@ import Lenis from "lenis";
 
 const Navbar = () => (
   <nav className="fixed top-0 w-full flex justify-between items-center px-8 py-6 bg-surface/80 backdrop-blur-xl z-50 border-b border-outline-variant/10">
-    <div className="text-2xl font-bold tracking-tighter text-white uppercase font-body">SPACEKAYAK</div>
+    <div className="text-2xl font-bold tracking-tighter text-white uppercase font-body">LCusAgent</div>
     <div className="hidden md:flex gap-8 items-center font-label text-sm font-medium">
       <Link className="text-secondary border-b-2 border-secondary pb-1" to="/">Home</Link>
       <a className="text-white hover:text-primary transition-colors duration-200" href="#">Newsletter</a>
@@ -172,19 +172,16 @@ const Team = () => (
     <div className="container mx-auto px-8">
       <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
         <h2 className="text-6xl md:text-8xl font-headline text-white leading-tight uppercase">
-          THE<br />SPACEKAYAK<br />CREW
+          THE<br />LCusAgent<br />Team
         </h2>
         <a href="#" className="text-primary font-bold text-lg font-label border-b border-primary pb-2 hover:text-white hover:border-white transition-all">
-          JOIN THE SQUAD
+          Intro THE SQUAD
         </a>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
         {[
-          { name: "SUDO", role: "CAPTAIN", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFDORYHD_7w5kIfqeVitiWvqWSrbKIeCJBVLnUs99cwIJYajOhmZUeez1NNSuy3eYc86Q0yQdjngXEdEa8ZOlaA1bq87JQXma6V5rfuH-4GoF2XZSHYoas7iWS-c7kpmmW_uruptyfgoXfrsc7MZCed2NRfD5jTzMJWBCMmFC9vJEjDw0P5ZlvNqxnLsFW_qxeAKOai_p0VvqDAmVtOVHwWBqdcuaxwztdL1pGZHEnbRnDwhMVfGTrNm8fd-28nZSJwUnIDebUcyE" },
-          { name: "PIXEL", role: "DESIGN OPS", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDoenBFnWG98PSXvak3Jv8wvBx6j9CPNHhXe3tOo4rjR90JZQGXcU3Kb--3xg87L32QHWkXzefnOIW8VkP9xtWzRy1F4Mp4eUJIqwsD7idcIWwv_2_BXCQvCRqRd9MADwsgLVv3gx_tAK3urkw2afYG1p1KrFli_MMhY1lP78lSF48j9MqXtLbf71k35W4FB7uJ9w-U8YF86mGnw1y1o4twfdq66DFQvl1e2NNPBXkLqPgrYg6niVDu7JN8MASBnpf9dgMMHmXiBes" },
-          { name: "NODE", role: "PROTOCOL", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCxbpo_UdPRGCH_Lon15tlMbrnF0uHjQ2TxvCxx3xO-9v7bkrTDUmNpfsW0HTjJcrx8j1z6gbu7vcBZ1wC7Ye9J_6505ZTyhEAqtqIjnvJYuUNEnI-UD7-eL2T4rtaEkSoxuVF6lwUOvRmFNBZbzvjvq3MBzUJ5u5RyTVy6hisbMPy93DZs4w_XUEsx4DCWXO43-B2O7QklOI9jo78_3E0oTKyjbhJ6ElBq_yo1HIHl7AZI2vzN0JuiigLOpGoswViaWg3ABntj9r4" },
-          { name: "FLUX", role: "CREATIVE", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAQNF7pZJaxYBuhR_992w1LMSiW1Hl--wanvuZDYLVYEMSj-8LZ29lD_jLYp9SzuZeZyRNg3qyk3QRoupQRoupQRqoTyJjH5CJGS7351rqDBGaBgjEXxHDV6B2_QavJiXycHGfn-8maiCwF2gRPoPhO7uBRH6DmSS8o4H_aHF9E7vHMh5F2A6E8pWstYhCYBQMGTYQRz-uWR-CjGiF88VcHDuKP_eFUHPvVpK9ksbthOGn_h88oXQWyViI6lYmxveLO7OCLjpoLnxKBTHno" },
-          { name: "COSMO", role: "COMMUNITY", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCQobCvd_ck7DL82c8R5Xet7CtLRjAWL39c9XCiEFu-gQlhI1uc2DyxkkQnBm-D1kX7nbhqVc8jUi-Safnc9EHzZ6jfv9B91lNu_eae5Zp90V8tbk4UcoaTN6sj3DYUyJvcAP4j9fJliFkXJUSrVXTFsdg1Qz2985nAnw9n3jRaGeCLJd4NXsTMNlEBJfky_5dbjQ8mUKrY6H6DeIrrzV88amB1wP4bNuo5it3hfd8gFT-MqZTE1FpSpx-OF2u0Ki_eve0EoFF7KIQ" }
+          { name: "Lana", role: "Lead Developer", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFDORYHD_7w5kIfqeVitiWvqWSrbKIeCJBVLnUs99cwIJYajOhmZUeez1NNSuy3eYc86Q0yQdjngXEdEa8ZOlaA1bq87JQXma6V5rfuH-4GoF2XZSHYoas7iWS-c7kpmmW_uruptyfgoXfrsc7MZCed2NRfD5jTzMJWBCMmFC9vJEjDw0P5ZlvNqxnLsFW_qxeAKOai_p0VvqDAmVtOVHwWBqdcuaxwztdL1pGZHEnbRnDwhMVfGTrNm8fd-28nZSJwUnIDebUcyE" },
+          { name: "Catur", role: "Fullstack Developer", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDoenBFnWG98PSXvak3Jv8wvBx6j9CPNHhXe3tOo4rjR90JZQGXcU3Kb--3xg87L32QHWkXzefnOIW8VkP9xtWzRy1F4Mp4eUJIqwsD7idcIWwv_2_BXCQvCRqRd9MADwsgLVv3gx_tAK3urkw2afYG1p1KrFli_MMhY1lP78lSF48j9MqXtLbf71k35W4FB7uJ9w-U8YF86mGnw1y1o4twfdq66DFQvl1e2NNPBXkLqPgrYg6niVDu7JN8MASBnpf9dgMMHmXiBes" },
         ].map((member, i) => (
           <motion.div 
             key={i} 
@@ -211,8 +208,8 @@ const Contact = () => (
           <h2 className="text-6xl md:text-7xl font-headline text-white mb-8">Ready to initiate?</h2>
           <p className="text-gray-400 text-xl leading-relaxed font-body">Drop us a line and let's discuss how we can build the future of the internet together.</p>
           <div className="mt-12 space-y-4">
-            <p className="text-secondary font-bold font-label text-lg">HELLO@SPACEKAYAK.XYZ</p>
-            <p className="text-white font-label tracking-widest uppercase">BENGALURU, INDIA</p>
+            <p className="text-secondary font-bold font-label text-lg">HELLO@LCusAgent.XYZ</p>
+            <p className="text-white font-label tracking-widest uppercase">Yogyakarta, Indonesia</p>
           </div>
         </div>
         <div className="bg-white p-12 text-black">
@@ -244,7 +241,7 @@ const Footer = () => (
     <div className="container mx-auto px-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
         <div>
-          <div className="text-4xl font-bold tracking-tighter text-secondary uppercase mb-8 font-body">SPACEKAYAK</div>
+          <div className="text-4xl font-bold tracking-tighter text-secondary uppercase mb-8 font-body">LCusAgent</div>
           <p className="text-gray-400 max-w-sm font-body leading-relaxed text-lg">
             A studio built for the next evolution of human coordination and creative expression.
           </p>
@@ -271,8 +268,8 @@ const Footer = () => (
         </div>
       </div>
       <div className="flex flex-col md:flex-row justify-between items-center border-t border-outline-variant/10 pt-12 text-gray-500 font-label text-[10px] tracking-[0.3em] uppercase">
-        <p>© 2024 SPACEKAYAK. ALL RIGHTS RESERVED.</p>
-        <p>MADE IN THE MULTIVERSE</p>
+        <p>© 2026 LCusAgent. ALL RIGHTS RESERVED.</p>
+        <p>MADE IN Fivee Team</p>
       </div>
     </div>
   </footer>
