@@ -30,7 +30,7 @@ const Hero = () => (
         transition={{ duration: 0.8 }}
       >
         <h1 className="text-6xl md:text-8xl font-headline font-light leading-tight tracking-tight text-white mb-8">
-          Web3 native creative studio for the <span className="italic text-primary">new internet</span> companies
+          The first autonomous AI agent economy <span className="italic text-primary">simulation</span>
         </h1>
         <div className="flex gap-4">
           <button className="bg-secondary text-on-secondary px-8 py-4 text-lg font-bold hover:brightness-110 transition-all active:scale-95">
@@ -63,9 +63,9 @@ const Marquee = () => (
     <div className="flex whitespace-nowrap animate-marquee">
       {[...Array(4)].map((_, i) => (
         <div key={i} className="flex items-center gap-8 px-4 font-bold text-3xl md:text-4xl text-black tracking-widest uppercase">
-          <span>WEB3 NATIVE DESIGN</span>
+          <span>VISUAL COMMERCE</span>
           <span className="text-white">•</span>
-          <span>INITIATE LAUNCH SEQUENCE</span>
+          <span>SIMULATE ECONOMY</span>
           <span className="text-white">•</span>
         </div>
       ))}
@@ -172,7 +172,7 @@ const Team = () => (
     <div className="container mx-auto px-8">
       <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
         <h2 className="text-6xl md:text-8xl font-headline text-white leading-tight uppercase">
-          THE<br />LCusAgent<br />Team
+          THE<br />LCusAgent<br />SQUAD
         </h2>
         <a href="#" className="text-primary font-bold text-lg font-label border-b border-primary pb-2 hover:text-white hover:border-white transition-all">
           Intro THE SQUAD
@@ -243,7 +243,7 @@ const Footer = () => (
         <div>
           <div className="text-4xl font-bold tracking-tighter text-secondary uppercase mb-8 font-body">LCusAgent</div>
           <p className="text-gray-400 max-w-sm font-body leading-relaxed text-lg">
-            A studio built for the next evolution of human coordination and creative expression.
+            An economy simulation built for the next evolution of human coordination and autonomous expression.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8">
@@ -302,28 +302,28 @@ export function Landing() {
       <Marquee />
       <section className="bg-surface">
         <ServiceRow 
-          tag="System Architecture"
-          title="Composability in design"
-          description="We build systems that are meant to be broken down, remixed, and integrated across the decentralised ecosystem."
+          tag="Autonomous Economy"
+          title="Self-governing Agents"
+          description="Agents operate as workers in a 3D isometric environment, managing their own financial operations using Locus smart wallets."
           image="https://lh3.googleusercontent.com/aida-public/AB6AXuAOwF-2HFpG5PmmZI1gXGz-UWryqYfcDSWCmkQ5JmWKb2L7XrwGeue2KtfBMF0xTHHYAOl5dFidPLA2tY8vRCGSyr8niPaHOC2YQJWOXaDqMs9Ovc-95QIk3QxN8kg6wslQ76Ed0ehs1Wudzh65ldhaUO3su4BFL_bqoC2esVQLwab07ybWSVH3QJCJl7SQk3mpLdu5xcV-AkS68FC-OgZMnSj2QOhAcTLPHIrZO1vw4bD5O6uphn42ybeUw67xcupbG1Wca-0W3Zg"
         />
         <ServiceRow 
-          tag="UX Protocol"
-          title="Human Readable Blockchain"
-          description="Simplifying complex on-chain interactions into intuitive, delightful experiences for everyone."
+          tag="Visual Commerce"
+          title="See the money flow"
+          description="Real-time USDC transactions between agents are visualized as animated pulses, making the autonomous economy tangible."
           image="https://lh3.googleusercontent.com/aida-public/AB6AXuCMgm2JLdQxos5r4HtovihITi5nAsKvIlDZvf8elOPOx2SPgox-5YamemM3muqNK25GZeRpMSlu6cMT7LASsLJmgteYNNxzcAyDpJKUof4Es2okC2WULRoh67nzwqEjnwOJTX2zvuPFWfBPtXdyRgLxp1KaWljFVmlt5YY78X-5OOyV0sMS1mkMWuSjdMJVllEnGUHN6bV7b9f13xPL0BNAjYdPYC-57S9Q4r-mxwVitEbopr7hLywKPxeULDEesEUrWIUHPKfbsSU"
           reverse
         />
         <ServiceRow 
-          tag="Onboarding"
-          title="First time on-chain experience"
-          description="Onboarding the next billion users by removing friction and focusing on pure utility and fun."
+          tag="Multi-Agent Ecosystem"
+          title="B2B & B2C Interactions"
+          description="From consumer-facing interactions to agent-to-agent marketplaces, LCusAgent simulates every layer of a digital economy."
           image="https://lh3.googleusercontent.com/aida-public/AB6AXuAqZqM3pfhApPr-bJA-Wdj5bLQpn3uJnUZPa3Q31T_czLpu6OwllYMrkLEzu35Si-PbyiCbBlAo9M8TY3My6W9b0LaxydhF9haxzOZ0lt13PJuOlFSta0phCbvyAszJ0Doe1FUUxjMbafiisdlmLRFMi8mzQ3V1jMXxWK8LM5agPF3AVcWrOENPpb-EtVAqCPq9aQx-XJjha4_Ahs3J8jXt0jeMgskazBRDiiVgmCwV8J36dbtpuhnQadOXf_pN4ZjSaTolLgW7QKk"
         />
         <ServiceRow 
-          tag="Decentralized Brand"
-          title="Headless brand strategy"
-          description="Evolving brands that live through community ownership and decentralized governance."
+          tag="Financial Operations"
+          title="Automated Treasury"
+          description="Treasury agents monitor policy, rebalance budgets, and detect anomalies automatically, ensuring stable economic growth."
           image="https://lh3.googleusercontent.com/aida-public/AB6AXuCfCXwTOovEe92uNJWmUYzlBUrTWlg8jBKEUqaAEyQo7kTT1GOiNEpHk6KqGh_WpN-pahkzZcvJl3PcYi_GVylLrC1BfAcehdPJdFJRAHbnYhf7eSuAnYVeTp4ERpY656ou-KaCTozPrAIbxuO7CYt47poWRpe_Ypcq6WV6wrxSjmR9AOXwiWpNKVFIQsnRVRbHQS-dGiNmS26sakXUcPjdXaEob8rhSoKgOqUyRASDnYTnc4xFss5u2sggNnX_XSfKax1f0V1M6Y"
           reverse
         />
