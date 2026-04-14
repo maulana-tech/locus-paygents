@@ -115,66 +115,41 @@ const AgentCharacter = ({ agent, onSelect }: { agent: Agent, onSelect?: (id: str
       {/* Dynamic Status Ring */}
       <div className={`status-ring ${statusClass}`} />
       
-      {/* Intent Bubble */}
-      <AnimatePresence>
-        {agent.target && agent.role === 'PROCUREMENT' && (
-          <motion.div 
-            initial={{ scale: 0, y: 10, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0, y: 10, opacity: 0 }}
-            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] p-1 rounded-full shadow-xl z-30 flex items-center gap-1 px-2 py-0.5 whitespace-nowrap"
-          >
-            <span className="text-[8px] font-bold">RESEARCHING</span> 🔍
-          </motion.div>
-        )}
-        {agent.status === 'WORKING' && agent.skills.length > 0 && Math.random() < 0.3 && (
+      {/* Character Visual - 3D Rendered Robot */}
+      <div className={`agent-character-sprite ${getRoleClass(agent.role)} relative`}>
+        {/* Floating Tag */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
+          <div className="whitespace-nowrap bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[8px] font-bold border border-white/10 uppercase tracking-tighter text-white shadow-xl">
+            {agent.name}
+          </div>
+          <div className="text-[10px] font-mono text-primary font-bold bg-black/40 backdrop-blur-md px-2 rounded-full mt-1 border border-primary/20">
+            ${agent.balance.toFixed(2)}
+          </div>
+        </div>
+
+        {/* Intent Bubble */}
+        <AnimatePresence>
+          {agent.status === 'WORKING' && (
             <motion.div 
               initial={{ scale: 0, y: 10, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0, y: 10, opacity: 0 }}
-              className="absolute -top-12 left-1/2 -translate-x-1/2 bg-primary text-black text-[10px] p-1 rounded-full shadow-xl z-30 flex items-center gap-1 px-2 py-0.5 whitespace-nowrap"
+              className="absolute -right-12 top-0 bg-primary text-black text-[9px] font-black p-1.5 rounded-full shadow-[0_0_20px_rgba(0,212,255,0.4)] z-30"
             >
-              <Zap size={8} /> <span className="text-[7px] font-bold uppercase">{skillMetadata[agent.skills[0]]?.title || "Skill"}</span>
+              <Zap size={10} fill="currentColor" />
             </motion.div>
-        )}
-        {agent.status === 'TRANSACTING' && (
-          <motion.div 
-            initial={{ scale: 0, y: 10, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] p-1 rounded-full shadow-xl z-30"
-          >
-            {agent.role === 'PROCUREMENT' ? '💰' : '🤝'}
-          </motion.div>
-        )}
-        {agent.status === 'ERROR' && (
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] p-1 rounded-full shadow-xl z-30"
-          >
-            🚫
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Character Visual - 3D Sprite */}
-      <div className={`agent-character-sprite ${getRoleClass(agent.role)} relative`}>
-        {/* Floating Tag */}
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="whitespace-nowrap bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold border border-white/10 uppercase tracking-tighter text-white">
-            {agent.name}
-          </div>
-          <div className="text-[9px] font-mono text-primary font-bold bg-black/40 px-1 rounded mt-0.5">
-            {agent.balance.toFixed(2)}
-          </div>
-        </div>
-
-        {/* Mode Indicator Accessory */}
-        {agent.status === 'PENDING' && (
-          <div className="absolute -right-2 top-0 bg-purple-600 text-white p-1 rounded-full animate-pulse shadow-lg">
-            <Activity size={10} />
-          </div>
-        )}
+          )}
+          {agent.status === 'TRANSACTING' && (
+            <motion.div 
+              initial={{ scale: 0, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0, y: 10, opacity: 0 }}
+              className="absolute -left-12 top-0 bg-secondary text-on-secondary text-[10px] p-1.5 rounded-full shadow-xl z-30 font-bold"
+            >
+              💰
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* CLICKABLE HITBOX */}
@@ -191,6 +166,7 @@ const AgentCharacter = ({ agent, onSelect }: { agent: Agent, onSelect?: (id: str
 };
 
 export function Simulation() {
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [mode, setMode] = useState<SimulationMode>('INDIVIDUAL');
   const [currentFloor, setCurrentFloor] = useState(1);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -388,9 +364,9 @@ export function Simulation() {
 
   return (
     <div className={`sim-container text-white select-none ${mode === 'INDIVIDUAL' ? 'mode-individual' : 'mode-company'}`}>
-      {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[#0a0d14]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,212,255,0.05),transparent)] pointer-events-none" />
+      {/* Background Ambience - Modified to be an overlay instead of solid floor */}
+      <div className="absolute inset-0 bg-[#0a0d14]/20" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(0,212,255,0.08),transparent)] pointer-events-none" />
 
       {/* --- HUD: NAVIGATION & BRAND --- */}
       <div className="absolute top-8 left-8 z-50 flex items-center gap-4">
@@ -403,18 +379,16 @@ export function Simulation() {
             <p className="text-[9px] text-white/40 uppercase tracking-[0.2em]">Autonomous Agent Simulation</p>
           </div>
           <div className="w-px h-8 bg-white/10 mx-2" />
-          <div className="flex bg-black/40 rounded-full p-1 border border-white/10">
+          <div className="flex items-center gap-2">
+            <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 flex items-center gap-2 ${mode === 'INDIVIDUAL' ? 'text-primary' : 'text-secondary'}`}>
+              {mode === 'INDIVIDUAL' ? <User size={12} /> : <Building2 size={12} />}
+              {mode} MODE
+            </div>
             <button 
-              onClick={() => setMode('INDIVIDUAL')}
-              className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-2 ${mode === 'INDIVIDUAL' ? 'bg-primary text-black' : 'text-white/40 hover:text-white'}`}
+              onClick={() => setShowOnboarding(true)}
+              className="px-4 py-1.5 rounded-full text-[10px] font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all"
             >
-              <User size={12} /> INDIVIDUAL
-            </button>
-            <button 
-              onClick={() => setMode('COMPANY')}
-              className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-2 ${mode === 'COMPANY' ? 'bg-primary text-black' : 'text-white/40 hover:text-white'}`}
-            >
-              <Building2 size={12} /> COMPANY
+              RESET
             </button>
           </div>
         </div>
@@ -508,9 +482,9 @@ export function Simulation() {
         </div>
       )}
 
-      {/* --- SIMULATION STAGE --- */}
-      <div className="w-full h-full flex items-center justify-center overflow-hidden">
-        <div className="relative">
+      {/* --- SIMULATION STAGE (ISOMETRIC) --- */}
+      <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
+        <div className="relative scale-110">
           {/* Isometric Diamond Grid */}
           <div className="relative">
             {Array.from({ length: GRID_SIZE }).map((_, i) => 
@@ -519,14 +493,14 @@ export function Simulation() {
                 return (
                   <div 
                     key={`${i}-${j}`}
-                    className="absolute border-[0.5px] border-white/10"
+                    className="absolute border-[0.5px] border-white/5"
                     style={{
                       width: TILE_SIZE,
                       height: TILE_SIZE / 2,
                       left, top,
                       transform: 'translate(-50%, -50%)',
                       clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                      background: 'rgba(255,255,255,0.02)'
+                      background: 'rgba(255,255,255,0.01)'
                     }}
                   />
                 );
@@ -540,7 +514,6 @@ export function Simulation() {
               const from = isoToScreen(beam.fromPos.x, beam.fromPos.y);
               const to = isoToScreen(beam.toPos.x, beam.toPos.y);
               
-              // Simplified line calculation between isometric points
               return (
                 <motion.div 
                   key={beam.id}
@@ -551,8 +524,8 @@ export function Simulation() {
                   style={{
                     left: from.left,
                     top: from.top,
-                    width: '150px', // Visual approximation
-                    transform: `rotateZ(-30deg) translate(20px, -10px)`, // Iso adjustment
+                    width: '150px',
+                    transform: `rotateZ(-30deg) translate(20px, -10px)`,
                   }}
                 />
               );
@@ -563,15 +536,15 @@ export function Simulation() {
           <AnimatePresence>
             {agents.filter(a => a.floor === currentFloor).map(agent => (
               <AgentCharacter 
-      key={agent.id} 
-      agent={agent} 
-      onSelect={(id) => setSelectedAgentId(prev => prev === id ? null : id)}
-    />
+                key={agent.id} 
+                agent={agent} 
+                onSelect={(id) => setSelectedAgentId(prev => prev === id ? null : id)}
+              />
             ))}
           </AnimatePresence>
 
-          {/* Booth Labels */}
-          {currentFloor === 2 && BOOTHS.map(booth => {
+          {/* Booth Labels (Company Floor 2) */}
+          {mode === 'COMPANY' && currentFloor === 2 && BOOTHS.map(booth => {
             const { left, top } = isoToScreen(booth.x, booth.y);
             return (
               <div 
@@ -579,22 +552,24 @@ export function Simulation() {
                 className="absolute pointer-events-none flex flex-col items-center"
                 style={{ left, top, transform: 'translate(-50%, -150%)', zIndex: 10 }}
               >
-                <div className="bg-primary/20 border border-primary/40 px-2 py-0.5 rounded text-[8px] font-bold text-primary uppercase">
+                <div className="bg-primary/20 backdrop-blur-md border border-primary/40 px-3 py-1 rounded-full text-[9px] font-black text-primary uppercase shadow-lg">
                   Booth {booth.id}
                 </div>
-                <div className="text-[7px] text-white/40 mt-0.5">{booth.name}</div>
+                <div className="text-[8px] text-white/40 mt-1 font-bold">{booth.name}</div>
               </div>
             );
           })}
           
           {/* Visual Floor Indicators */}
-          <div className="absolute top-[350px] left-1/2 -translate-x-1/2 text-center pointer-events-none">
-            <h2 className="text-8xl font-black tracking-tighter italic uppercase text-white/[0.03] select-none">
-              {mode === 'INDIVIDUAL' ? "Freelance Swarm" : (
-                currentFloor === 1 ? "Lobby" : currentFloor === 2 ? "Marketplace" : "Financial Ops"
-              )}
-            </h2>
-          </div>
+          {!showOnboarding && (
+            <div className="absolute top-[350px] left-1/2 -translate-x-1/2 text-center pointer-events-none">
+              <h2 className="text-[12rem] font-black tracking-tighter italic uppercase text-white/[0.04] select-none leading-none">
+                {mode === 'INDIVIDUAL' ? "STUDIO" : (
+                  currentFloor === 1 ? "LOBBY" : currentFloor === 2 ? "MART" : "FINANCE"
+                )}
+              </h2>
+            </div>
+          )}
         </div>
       </div>
 
@@ -689,6 +664,94 @@ export function Simulation() {
               <button className="w-full bg-primary/10 text-primary py-3 rounded-lg text-[10px] font-bold tracking-[0.2em] hover:bg-primary hover:text-black transition-all">
                 REQUEST ACCESS
               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* --- ONBOARDING OVERLAY --- */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-[#0a0d14]/95 backdrop-blur-xl"
+          >
+            <div className="max-w-5xl w-full">
+              <div className="text-center mb-16">
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4">CHOOSE YOUR SIMULATION</h2>
+                  <p className="text-white/40 tracking-[0.3em] uppercase text-sm">Select an environment to explore the autonomous economy</p>
+                </motion.div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <motion.div 
+                  initial={{ x: -50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  whileHover={{ y: -10 }}
+                  transition={{ delay: 0.4 }}
+                  onClick={() => {
+                    setMode('INDIVIDUAL');
+                    setShowOnboarding(false);
+                  }}
+                  className="group relative cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-primary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                  <div className="relative glass-panel p-8 border-t-2 border-primary overflow-hidden h-full">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-all">
+                      <User size={120} />
+                    </div>
+                    <div className="mb-8">
+                      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-black transition-all">
+                        <User size={32} />
+                      </div>
+                      <h3 className="text-3xl font-bold mb-4">Individual Swarm</h3>
+                      <p className="text-white/60 leading-relaxed mb-6">
+                        Explore a decentralized network of freelance AI agents operating from home studios. Perfect for seeing micro-interactions and personal agent logic.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs tracking-widest uppercase">
+                      ENTER SIMULATION <ArrowRight size={16} />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  initial={{ x: 50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  whileHover={{ y: -10 }}
+                  transition={{ delay: 0.6 }}
+                  onClick={() => {
+                    setMode('COMPANY');
+                    setShowOnboarding(false);
+                  }}
+                  className="group relative cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-secondary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                  <div className="relative glass-panel p-8 border-t-2 border-secondary overflow-hidden h-full">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-all">
+                      <Building2 size={120} />
+                    </div>
+                    <div className="mb-8">
+                      <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary mb-6 group-hover:bg-secondary group-hover:text-black transition-all">
+                        <Building2 size={32} />
+                      </div>
+                      <h3 className="text-3xl font-bold mb-4">Corporate HQ</h3>
+                      <p className="text-white/60 leading-relaxed mb-6">
+                        Enter a multi-level enterprise headquarters with complex hierarchy, marketplace booths, and full financial operations monitoring.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-secondary font-bold text-xs tracking-widest uppercase">
+                      ENTER SIMULATION <ArrowRight size={16} />
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         )}
