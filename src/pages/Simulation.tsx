@@ -77,16 +77,15 @@ const isoToScreen = (x: number, y: number) => {
 const AgentCharacter = ({ agent }: { agent: Agent }) => {
   const { left, top } = isoToScreen(agent.x, agent.y);
   
-  const getRoleTheme = (role: AgentRole) => {
+  const getRoleClass = (role: AgentRole) => {
     switch(role) {
-      case 'CONSUMER': return { color: '#00d4ff', icon: <Headset size={16} />, accessory: 'Headset' };
-      case 'PROVIDER': return { color: '#ffd700', icon: <Wifi size={16} />, accessory: 'Antenna' };
-      case 'PROCUREMENT': return { color: '#ff00ff', icon: <Briefcase size={16} />, accessory: 'Briefcase' };
-      case 'TREASURY': return { color: '#00c853', icon: <Calculator size={16} />, accessory: 'Vault Key' };
+      case 'CONSUMER': return 'role-consumer';
+      case 'PROVIDER': return 'role-provider';
+      case 'PROCUREMENT': return 'role-procurement';
+      case 'TREASURY': return 'role-treasury';
     }
   };
 
-  const theme = getRoleTheme(agent.role);
   const statusClass = agent.status.toLowerCase();
 
   return (
@@ -100,25 +99,14 @@ const AgentCharacter = ({ agent }: { agent: Agent }) => {
       {/* Dynamic Status Ring */}
       <div className={`status-ring ${statusClass}`} />
       
-      {/* Character Visual */}
-      <div className="relative w-12 h-14 flex items-center justify-center">
-        {/* Agent "Body" */}
-        <div 
-          className="w-8 h-10 rounded-lg flex items-center justify-center text-white border border-white/20"
-          style={{ 
-            background: `linear-gradient(135deg, ${theme.color}, #121620)`,
-            boxShadow: `0 0 20px ${theme.color}44`
-          }}
-        >
-          {theme.icon}
-        </div>
-
+      {/* Character Visual - 3D Sprite */}
+      <div className={`agent-character-sprite ${getRoleClass(agent.role)} relative`}>
         {/* Floating Tag */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="whitespace-nowrap bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold border border-white/10 uppercase tracking-tighter">
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
+          <div className="whitespace-nowrap bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold border border-white/10 uppercase tracking-tighter text-white">
             {agent.name}
           </div>
-          <div className="text-[10px] font-mono text-primary font-bold">
+          <div className="text-[9px] font-mono text-primary font-bold bg-black/40 px-1 rounded mt-0.5">
             {agent.balance.toFixed(2)}
           </div>
         </div>
@@ -259,7 +247,7 @@ export function Simulation() {
   const totalEconomyRevenue = useMemo(() => agents.reduce((sum, a) => sum + a.revenue, 0), [agents]);
 
   return (
-    <div className="sim-container text-white select-none">
+    <div className={`sim-container text-white select-none ${mode === 'INDIVIDUAL' ? 'mode-individual' : 'mode-company'}`}>
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[#0a0d14]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,212,255,0.05),transparent)] pointer-events-none" />
