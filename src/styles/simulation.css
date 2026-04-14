@@ -12,15 +12,36 @@
 }
 
 .sim-container {
-  background-color: var(--office-bg);
+  background-color: #f0f4f8;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
   position: relative;
   font-family: 'Space Grotesk', sans-serif;
+  transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Isometric Grid */
+.sim-container.mode-individual {
+  background: url('/home_bg_v2.png') no-repeat center center;
+  background-size: cover;
+}
+
+.sim-container.mode-company {
+  background: url('/office_bg_v2.png') no-repeat center center;
+  background-size: cover;
+}
+
+/* Background Brightener / Glass Layer */
+.sim-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: saturate(1.2) contrast(1.1);
+  z-index: 1;
+}
+
+/* Isometric Grid - Brighter for daylight */
 .iso-grid {
   position: absolute;
   top: 50%;
@@ -30,10 +51,28 @@
   width: 2000px;
   height: 2000px;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
   background-size: 64px 64px;
+  z-index: 2;
 }
+
+/* Agent Styling - High Depth 3D */
+.agent-character-sprite {
+  width: 120px;
+  height: 150px;
+  background-image: url('/agents_3d.png');
+  background-size: 550px 550px; 
+  background-repeat: no-repeat;
+  transition: transform 0.3s ease;
+  mix-blend-mode: screen; /* Removes black background */
+  filter: drop-shadow(0 20px 15px rgba(0,0,0,0.3)); /* Ground Shadow simulated */
+}
+
+.role-consumer { background-position: -5px -20px; }
+.role-provider { background-position: -140px -20px; }
+.role-procurement { background-position: -275px -20px; }
+.role-treasury { background-position: -410px -20px; }
 
 /* Agent Styling */
 .agent-sprite {
@@ -94,11 +133,11 @@
 
 /* UI Overlay - Glassmorphism */
 .glass-panel {
-  background: rgba(26, 31, 46, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: rgba(13, 17, 23, 0.85); /* Darker/Higher contrast for bright BGs */
+  backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
 }
 
 /* Transaction Beam */
