@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
@@ -23,7 +23,10 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { locusConfig } from '../config/locus-config';
+import { locusConfig, startOpenClawListener } from '../config/locus-config';
+import type { OpenClawEvent } from '../config/locus-config';
+import { fetchBalance, fetchTransactions, callX402Skill, findX402Skill } from '../lib/locus-api';
+import type { LocusBalance } from '../lib/locus-api';
 import '../styles/simulation.css';
 import { skillMetadata } from '../config/skill-metadata';
 
@@ -63,6 +66,7 @@ interface Transaction {
   amount: number;
   timestamp: number;
   service: string;
+  isLive?: boolean; // true = came from real Locus API
 }
 
 interface Beam {
@@ -74,11 +78,12 @@ interface Beam {
 // --- Config ---
 const GRID_SIZE = 10;
 const TILE_SIZE = 64;
+// Booths mapped to real Locus x402 services
 const BOOTHS = [
-  { id: 'A1', x: 2, y: 2, service: 'firecrawl/scrape', name: 'Firecrawl Booth' },
-  { id: 'A2', x: 2, y: 6, service: 'exa/search', name: 'Exa Search Booth' },
-  { id: 'B1', x: 7, y: 2, service: 'openai/chat', name: 'OpenAI Booth' },
-  { id: 'B2', x: 7, y: 7, service: 'tasks/create', name: 'Task Booth' },
+  { id: 'A1', x: 2, y: 2, service: 'agentmail/create-inbox', name: 'AgentMail Booth' },
+  { id: 'A2', x: 2, y: 6, service: 'agentmail/send-message', name: 'Email Send Booth' },
+  { id: 'B1', x: 7, y: 2, service: 'laso/get-card',          name: 'Laso Finance Booth' },
+  { id: 'B2', x: 7, y: 7, service: 'laso/auth',              name: 'Laso Auth Booth' },
 ];
 
 // --- Helper Functions ---
@@ -87,6 +92,12 @@ const isoToScreen = (x: number, y: number) => {
   const top = (x + y) * (TILE_SIZE / 4);
   return { left: `calc(50% + ${left}px)`, top: `calc(50% + ${top}px)` };
 };
+
+/** Returns raw pixel offsets (relative to center) — used for beam angle/length math */
+const isoToPos = (x: number, y: number) => ({
+  px: (x - y) * (TILE_SIZE / 2),
+  py: (x + y) * (TILE_SIZE / 4),
+});
 
 // --- Components ---
 
@@ -105,11 +116,11 @@ const AgentCharacter = ({ agent, onSelect }: { agent: Agent, onSelect?: (id: str
   const statusClass = agent.status.toLowerCase();
 
   return (
-    <motion.div 
+    <motion.div
       className={`agent-sprite ${agent.target ? 'walking' : 'idle'} ${agent.status === 'ERROR' ? 'error-shake' : ''}`}
       initial={false}
       animate={{ left, top }}
-      transition={{ duration: 1.5, ease: "linear" }}
+      transition={{ type: 'tween', duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
       style={{ zIndex: 20, transform: 'translate(-50%, -85%)' }}
     >
       {/* Dynamic Status Ring */}
@@ -175,6 +186,14 @@ export function Simulation() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [eventQueue, setEventQueue] = useState<OpenClawEvent[]>([]);
+  const [locusWallet, setLocusWallet] = useState<LocusBalance | null>(null);
+  const [x402Error, setX402Error] = useState<string | null>(null); // brief error toast
+  const isProcessingRef = useRef(false);
+  const agentsRef = useRef<Agent[]>([]);
+
+  // Keep agentsRef in sync with latest agents state (used in async callbacks)
+  useEffect(() => { agentsRef.current = agents; }, [agents]);
 
   // --- Swarm Lifecycle ---
   useEffect(() => {
@@ -205,7 +224,7 @@ export function Simulation() {
 
   // 1. Movement & AI Logic Loop
   useEffect(() => {
-    const aiInterval = setInterval(() => {
+    const aiInterval = setInterval(() => { // 1100ms > 850ms animation duration — no mid-flight interruptions
       setAgents(prev => prev.map(agent => {
         // If transacting, stay put
         if (agent.status === 'TRANSACTING' || agent.status === 'WORKING') return agent;
@@ -265,7 +284,7 @@ export function Simulation() {
         const dy = Math.floor(Math.random() * 3) - 1;
         return { ...agent, x: Math.max(0, Math.min(GRID_SIZE-1, agent.x + dx)), y: Math.max(0, Math.min(GRID_SIZE-1, agent.y + dy)) };
       }));
-    }, 1000);
+    }, 1100);
     return () => clearInterval(aiInterval);
   }, [currentFloor]);
 
@@ -295,8 +314,23 @@ export function Simulation() {
     return () => clearInterval(txInterval);
   }, [currentFloor]);
 
-  const handleTransaction = useCallback((buyer: Agent, seller: Agent, amount: number, service: string) => {
+  const handleTransaction = useCallback(async (buyer: Agent, seller: Agent, amount: number, service: string) => {
     console.log(`Starting transaction: ${buyer.name} -> ${seller.name} (${amount} USDC)`);
+
+    // Attempt real x402 call — fire and forget (simulation continues regardless)
+    const skill = findX402Skill(service);
+    if (skill) {
+      callX402Skill(skill.endpoint, { memo: `sim:${buyer.name}→${seller.name}` })
+        .then(() => {
+          // Real call succeeded — refresh wallet balance
+          fetchBalance().then(setLocusWallet).catch(() => {});
+        })
+        .catch((err: { status?: number }) => {
+          if (err?.status === 402) {
+            setX402Error('Insufficient USDC — top up at mpp.paywithlocus.com');
+          }
+        });
+    }
     
     // 1. Show Beam
     const beamId = Math.random().toString(36).substr(2, 9);
@@ -337,6 +371,172 @@ export function Simulation() {
       }
     }, 2000);
   }, [mode]);
+
+  // --- OpenClaw Event Queue Processor (Phase 3: Animation State Machine) ---
+  useEffect(() => {
+    if (eventQueue.length === 0 || isProcessingRef.current) return;
+
+    isProcessingRef.current = true;
+    const event = eventQueue[0];
+    const currentAgents = agentsRef.current;
+
+    const buyer = currentAgents.find(a => a.id === event.buyerId);
+    const targetBooth = BOOTHS.find(b => b.id === event.providerId);
+    const providerAgent = currentAgents.find(a => a.id === event.providerId);
+
+    const targetPos = targetBooth
+      ? { x: targetBooth.x, y: targetBooth.y }
+      : providerAgent
+      ? { x: providerAgent.x, y: providerAgent.y }
+      : null;
+
+    if (!buyer || !targetPos) {
+      setEventQueue(prev => prev.slice(1));
+      isProcessingRef.current = false;
+      return;
+    }
+
+    const beamId = event.id;
+    const buyerSpawnX = buyer.x;
+    const buyerSpawnY = buyer.y;
+    const buyerName = buyer.name;
+    const providerName = targetBooth?.name ?? providerAgent?.name ?? event.providerId;
+
+    // Step A: Walk to target (0s – 2s)
+    setAgents(prev => prev.map(a =>
+      a.id === event.buyerId ? { ...a, status: 'WORKING', target: targetPos } : a
+    ));
+
+    // Step B: Fire beam + mark TRANSACTING (2s)
+    setTimeout(() => {
+      setBeams(prev => [...prev, {
+        id: beamId,
+        fromPos: targetPos,
+        toPos: providerAgent ? { x: providerAgent.x, y: providerAgent.y } : targetPos,
+      }]);
+      setAgents(prev => prev.map(a => {
+        if (a.id === event.buyerId) return { ...a, status: 'TRANSACTING', target: undefined };
+        if (a.id === event.providerId) return { ...a, status: 'WORKING' };
+        return a;
+      }));
+
+      // Step C: Economy update (3.5s)
+      setTimeout(() => {
+        setAgents(prev => prev.map(a => {
+          if (a.id === event.buyerId) return { ...a, balance: a.balance - event.amount };
+          if (a.id === event.providerId) return { ...a, balance: a.balance + event.amount, revenue: a.revenue + event.amount };
+          return a;
+        }));
+        setTransactions(prev => [{
+          id: beamId,
+          from: buyerName,
+          fromId: event.buyerId,
+          to: providerName,
+          toId: event.providerId,
+          amount: event.amount,
+          timestamp: event.timestamp,
+          service: event.skillId,
+        }, ...prev].slice(0, 10));
+
+        // Step D: Cleanup + proceed to next event (4s)
+        setTimeout(() => {
+          setBeams(prev => prev.filter(b => b.id !== beamId));
+          setAgents(prev => prev.map(a => {
+            if (a.id === event.buyerId) return { ...a, status: 'IDLE', target: { x: buyerSpawnX, y: buyerSpawnY } };
+            if (a.id === event.providerId) return { ...a, status: 'IDLE' };
+            return a;
+          }));
+          setEventQueue(prev => prev.slice(1));
+          isProcessingRef.current = false;
+        }, 500);
+      }, 1500);
+    }, 2000);
+  }, [eventQueue]);
+
+  // --- Mount OpenClaw Listener (Phase 4) ---
+  useEffect(() => {
+    const cleanup = startOpenClawListener((event) =>
+      setEventQueue(prev => [...prev, event])
+    );
+    return cleanup;
+  }, []);
+
+  // --- Locus Live: Balance Sync ---
+  useEffect(() => {
+    const sync = async () => {
+      try {
+        const data = await fetchBalance();
+        setLocusWallet(data);
+      } catch {
+        // silently ignore — simulation continues without live balance
+      }
+    };
+    sync();
+    const id = setInterval(sync, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // --- Locus Live: Transaction Polling ---
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const { transactions } = await fetchTransactions();
+        if (!transactions.length) return;
+        setTransactions(prev => {
+          const existingIds = new Set(prev.map(t => t.id));
+          const fresh = transactions
+            .filter(t => !existingIds.has(t.id))
+            .map(t => ({
+              id: t.id,
+              from: t.from_address.slice(0, 6) + '…' + t.from_address.slice(-4),
+              fromId: 'locus-wallet',
+              to:   t.to_address.slice(0, 6)   + '…' + t.to_address.slice(-4),
+              toId: 'locus-external',
+              amount: parseFloat(t.amount),
+              timestamp: new Date(t.created_at).getTime(),
+              service: t.memo ?? 'x402',
+              isLive: true,
+            }));
+          return [...fresh, ...prev].slice(0, 10);
+        });
+      } catch {
+        // silently ignore
+      }
+    };
+    poll();
+    const id = setInterval(poll, 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-clear x402 error toast after 3s
+  useEffect(() => {
+    if (!x402Error) return;
+    const id = setTimeout(() => setX402Error(null), 3000);
+    return () => clearTimeout(id);
+  }, [x402Error]);
+
+  // --- Mock Transaction Generator (Phase 2) ---
+  const handleMockTransaction = useCallback(() => {
+    const currentAgents = agentsRef.current;
+    const eligible = currentAgents.filter(
+      a => (a.role === 'PROCUREMENT' || a.role === 'CONSUMER') && a.status === 'IDLE' && a.floor === currentFloor
+    );
+    if (!eligible.length) return;
+
+    const buyer = eligible[Math.floor(Math.random() * eligible.length)];
+    const booth = BOOTHS[Math.floor(Math.random() * BOOTHS.length)];
+    const service = locusConfig.wrappedApis[Math.floor(Math.random() * locusConfig.wrappedApis.length)];
+
+    setEventQueue(prev => [...prev, {
+      id: `evt_${Date.now().toString(36)}`,
+      buyerId: buyer.id,
+      providerId: booth.id,
+      skillId: service.id,
+      amount: service.basePrice,
+      status: 'SUCCESS',
+      timestamp: Date.now(),
+    }]);
+  }, [currentFloor]);
 
   // --- Rendering Helpers ---
 
@@ -424,8 +624,26 @@ export function Simulation() {
           </div>
         </div>
 
+        {/* Live Wallet Panel */}
+        {locusWallet && (
+          <div className="glass-panel p-4 w-80 border-l-4 border-primary">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-[9px] font-bold text-primary/80 uppercase tracking-[0.2em]">Live Wallet</span>
+              </div>
+              <span className="text-[8px] text-white/30 font-mono uppercase">{locusWallet.chain}</span>
+            </div>
+            <div className="font-mono text-[9px] text-white/30 truncate mb-1">{locusWallet.wallet_address}</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold font-mono text-primary">{locusWallet.usdc_balance}</span>
+              <span className="text-[10px] text-white/40 font-bold">USDC</span>
+            </div>
+          </div>
+        )}
+
         {/* Transaction History Small Panel */}
-        <button 
+        <button
           onClick={() => setHistoryOpen(!historyOpen)}
           className="glass-panel p-4 flex items-center justify-between hover:bg-white/5 transition-all text-white/60"
         >
@@ -440,7 +658,7 @@ export function Simulation() {
 
         <AnimatePresence>
           {historyOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -448,11 +666,12 @@ export function Simulation() {
             >
               {transactions.length === 0 && <p className="text-[10px] text-white/20 italic">Awaiting commerce...</p>}
               {transactions.map(tx => (
-                <div key={tx.id} className="text-[10px] font-mono flex items-center gap-2 p-2 bg-white/5 border border-white/5 rounded">
-                  <span className="text-primary">{tx.from}</span>
-                  <ArrowRight size={8} />
-                  <span className="text-white/60">{tx.to}</span>
-                  <span className="ml-auto text-secondary font-bold">+{tx.amount}</span>
+                <div key={tx.id} className={`text-[10px] font-mono flex items-center gap-2 p-2 rounded border ${tx.isLive ? 'bg-primary/5 border-primary/20' : 'bg-white/5 border-white/5'}`}>
+                  {tx.isLive && <span className="text-[7px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded uppercase tracking-widest shrink-0">LIVE</span>}
+                  <span className="text-primary truncate">{tx.from}</span>
+                  <ArrowRight size={8} className="shrink-0" />
+                  <span className="text-white/60 truncate">{tx.to}</span>
+                  <span className="ml-auto text-secondary font-bold shrink-0">+{tx.amount}</span>
                 </div>
               ))}
             </motion.div>
@@ -484,7 +703,7 @@ export function Simulation() {
 
       {/* --- SIMULATION STAGE (ISOMETRIC) --- */}
       <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
-        <div className="relative scale-110">
+        <div className="relative">
           {/* Isometric Diamond Grid */}
           <div className="relative">
             {Array.from({ length: GRID_SIZE }).map((_, i) => 
@@ -508,24 +727,31 @@ export function Simulation() {
             )}
           </div>
 
-          {/* Transaction Beams */}
+          {/* Transaction Beams — angle & length computed from actual positions */}
           <AnimatePresence>
             {beams.map(beam => {
               const from = isoToScreen(beam.fromPos.x, beam.fromPos.y);
-              const to = isoToScreen(beam.toPos.x, beam.toPos.y);
-              
+              const fp = isoToPos(beam.fromPos.x, beam.fromPos.y);
+              const tp = isoToPos(beam.toPos.x, beam.toPos.y);
+              const dx = tp.px - fp.px;
+              const dy = tp.py - fp.py;
+              const length = Math.sqrt(dx * dx + dy * dy);
+              const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
               return (
-                <motion.div 
+                <motion.div
                   key={beam.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{ opacity: 1, scaleX: 1 }}
+                  exit={{ opacity: 0, scaleX: 0 }}
+                  transition={{ duration: 0.25 }}
                   className="transaction-beam"
                   style={{
                     left: from.left,
                     top: from.top,
-                    width: '150px',
-                    transform: `rotateZ(-30deg) translate(20px, -10px)`,
+                    width: `${length}px`,
+                    transform: `translateY(-50%) rotate(${angle}deg)`,
+                    transformOrigin: 'left center',
                   }}
                 />
               );
@@ -612,6 +838,52 @@ export function Simulation() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* --- x402 Error Toast --- */}
+      <AnimatePresence>
+        {x402Error && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-28 left-1/2 -translate-x-1/2 z-[200] glass-panel px-6 py-3 flex items-center gap-3 border-l-4 border-yellow-400"
+          >
+            <AlertCircle size={16} className="text-yellow-400 shrink-0" />
+            <span className="text-[11px] font-bold text-white/80">{x402Error}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- DEV CONTROL PANEL (Phase 2) --- */}
+      {!showOnboarding && (
+        <div className="absolute bottom-8 left-8 z-50">
+          <div className="glass-panel p-4 flex flex-col gap-3 border-l-4 border-secondary min-w-[200px]">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-secondary/80">Dev Panel</span>
+            </div>
+            <button
+              onClick={handleMockTransaction}
+              className="px-4 py-2 bg-secondary/10 text-secondary border border-secondary/30 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-secondary hover:text-black transition-all flex items-center gap-2 justify-center"
+            >
+              <Zap size={12} />
+              Mock OpenClaw Tx
+            </button>
+            <AnimatePresence>
+              {eventQueue.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-[9px] text-white/40 font-mono text-center"
+                >
+                  {eventQueue.length} event{eventQueue.length > 1 ? 's' : ''} in queue
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Scanline Effect */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_100%),linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(0,212,255,.03),rgba(0,255,0,.01),rgba(0,212,255,.03))] bg-[length:100%_2px,3px_100%] opacity-20" />

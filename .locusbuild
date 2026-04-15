@@ -1,0 +1,14 @@
+{
+  "services": {
+    "paygent-sim": {
+      "path": ".",
+      "port": 8080,
+      "healthCheck": "/",
+      "labels": { "locus.type": "skill-provider" },
+      "env": {
+        "NODE_ENV": "production",
+        "VITE_LOCUS_API_KEY": "${{LOCUS_API_KEY}}"
+      }
+    }
+  }
+}
