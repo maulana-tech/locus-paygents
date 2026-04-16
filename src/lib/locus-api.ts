@@ -34,6 +34,26 @@ export interface LocusTransactionsResponse {
   };
 }
 
+export interface X402Transaction {
+  id: string;
+  endpoint: string;
+  amount_usdc: string;
+  status: string;
+  created_at: string;
+  request_params: Record<string, unknown> | null;
+  response_status: number | null;
+}
+
+export interface X402TransactionsResponse {
+  transactions: X402Transaction[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  };
+}
+
 // --- API calls ---
 
 export const fetchBalance = (): Promise<LocusBalance> =>
@@ -41,6 +61,9 @@ export const fetchBalance = (): Promise<LocusBalance> =>
 
 export const fetchTransactions = (): Promise<LocusTransactionsResponse> =>
   locusRequest<LocusTransactionsResponse>(locusConfig.endpoints.transactions);
+
+export const fetchX402Transactions = (limit = 50): Promise<X402TransactionsResponse> =>
+  locusRequest<X402TransactionsResponse>(`/api/x402/transactions?limit=${limit}`);
 
 /**
  * Call a pay-per-use x402 skill endpoint.

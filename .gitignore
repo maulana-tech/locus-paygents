@@ -89,6 +89,4 @@ dist/
 
 # pnpm
 pnpm-lock.yaml
-# Keep pnpm-lock.yaml typically, but some users ignore it if they want to use latest always. 
-# However, standard practice is to keep it. I will keep it NOT ignored.
-# !pnpm-lock.yaml
+.vercel
