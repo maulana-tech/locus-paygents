@@ -174,13 +174,11 @@ const Team = () => (
     <div className="container mx-auto px-8">
       <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
         <h2 className="text-6xl md:text-8xl font-headline text-white leading-tight uppercase">
-          THE<br />PayGentic<br />SQUAD
+          THE<br />PayGentic<br />TEAM
         </h2>
-        <a href="#" className="text-primary font-bold text-lg font-label border-b border-primary pb-2 hover:text-white hover:border-white transition-all">
-          Intro THE SQUAD
-        </a>
+        <p className="text-gray-400 font-body text-lg max-w-md">Contributors and update akan di Bagian Team.</p>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
         {[
           { name: "Lana", role: "Lead Developer", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFDORYHD_7w5kIfqeVitiWvqWSrbKIeCJBVLnUs99cwIJYajOhmZUeez1NNSuy3eYc86Q0yQdjngXEdEa8ZOlaA1bq87JQXma6V5rfuH-4GoF2XZSHYoas7iWS-c7kpmmW_uruptyfgoXfrsc7MZCed2NRfD5jTzMJWBCMmFC9vJEjDw0P5ZlvNqxnLsFW_qxeAKOai_p0VvqDAmVtOVHwWBqdcuaxwztdL1pGZHEnbRnDwhMVfGTrNm8fd-28nZSJwUnIDebUcyE" },
           { name: "Catur", role: "Fullstack Developer", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDoenBFnWG98PSXvak3Jv8wvBx6j9CPNHhXe3tOo4rjR90JZQGXcU3Kb--3xg87L32QHWkXzefnOIW8VkP9xtWzRy1F4Mp4eUJIqwsD7idcIWwv_2_BXCQvCRqRd9MADwsgLVv3gx_tAK3urkw2afYG1p1KrFli_MMhY1lP78lSF48j9MqXtLbf71k35W4FB7uJ9w-U8YF86mGnw1y1o4twfdq66DFQvl1e2NNPBXkLqPgrYg6niVDu7JN8MASBnpf9dgMMHmXiBes" },
@@ -197,6 +195,18 @@ const Team = () => (
             <p className="text-gray-500 font-label text-xs uppercase tracking-widest mt-1">{member.role}</p>
           </motion.div>
         ))}
+        <motion.div 
+          whileHover={{ y: -10 }}
+          className="text-center group"
+        >
+          <div className="bg-surface-container mb-6 aspect-square overflow-hidden border border-dashed border-outline-variant/30 group-hover:border-primary flex items-center justify-center">
+            <div className="text-gray-600 group-hover:text-primary transition-all">
+              <Github size={48} />
+            </div>
+          </div>
+          <h4 className="font-bold text-white/40 text-xl">You?</h4>
+          <p className="text-gray-600 font-label text-xs uppercase tracking-widest mt-1">Contributor</p>
+        </motion.div>
       </div>
     </div>
   </section>
@@ -212,6 +222,10 @@ const Contact = () => (
           <div className="mt-12 space-y-4">
             <p className="text-secondary font-bold font-label text-lg">HELLO@PayGentic.XYZ</p>
             <p className="text-white font-label tracking-widest uppercase">Yogyakarta, Indonesia</p>
+            <div className="flex gap-4 mt-6">
+              <a href="https://github.com/maulana-tech/locus-paygents" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-all"><Github size={20} /></a>
+              <a href="#" className="text-gray-400 hover:text-white transition-all"><Twitter size={20} /></a>
+            </div>
           </div>
         </div>
         <div className="bg-white p-12 text-black">
@@ -245,7 +259,7 @@ const Footer = () => (
         <div>
           <div className="text-4xl font-bold tracking-tighter text-secondary uppercase mb-8 font-body">PayGentic</div>
           <p className="text-gray-400 max-w-sm font-body leading-relaxed text-lg">
-            An economy simulation built for the next evolution of human coordination and autonomous expression.
+            An autonomous AI agent economy simulation powered by Locus Payment Infrastructure. Watch agents transact USDC in real-time.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8">
@@ -261,17 +275,17 @@ const Footer = () => (
           <div>
             <h5 className="font-label text-white font-bold uppercase mb-6 tracking-widest text-sm">Explore</h5>
             <ul className="space-y-4 text-gray-400 font-label">
-              <li><a className="hover:text-white transition-all" href="#">Documentation</a></li>
-              <li><a className="hover:text-white transition-all" href="#">Marketplace</a></li>
-              <li><a className="hover:text-white transition-all" href="#">GitHub</a></li>
-              <li><a className="hover:text-white transition-all" href="#">References</a></li>
+              <li><Link className="hover:text-white transition-all" to="/simulation">Simulation</Link></li>
+              <li><a className="hover:text-white transition-all" href="https://beta.paywithlocus.com" target="_blank" rel="noreferrer">Locus Dashboard</a></li>
+              <li><a className="hover:text-white transition-all" href="https://github.com/maulana-tech/locus-paygents" target="_blank" rel="noreferrer">GitHub</a></li>
+              <li><a className="hover:text-white transition-all" href="https://paygents.vercel.app">Live Demo</a></li>
             </ul>
           </div>
         </div>
       </div>
       <div className="flex flex-col md:flex-row justify-between items-center border-t border-outline-variant/10 pt-12 text-gray-500 font-label text-[10px] tracking-[0.3em] uppercase">
-        <p>© 2026 LCusAgent. ALL RIGHTS RESERVED.</p>
-        <p>MADE IN Fivee Team</p>
+        <p>© 2026 PayGentic. All rights reserved.</p>
+        <p>Built with Locus Payment Infrastructure</p>
       </div>
     </div>
   </footer>
@@ -319,7 +333,7 @@ export function Landing() {
         <ServiceRow 
           tag="Multi-Agent Ecosystem"
           title="B2B & B2C Interactions"
-          description="From consumer-facing interactions to agent-to-agent marketplaces, LCusAgent simulates every layer of a digital economy."
+          description="From consumer-facing interactions to agent-to-agent marketplaces, PayGentic simulates every layer of a digital economy."
           image="https://lh3.googleusercontent.com/aida-public/AB6AXuAqZqM3pfhApPr-bJA-Wdj5bLQpn3uJnUZPa3Q31T_czLpu6OwllYMrkLEzu35Si-PbyiCbBlAo9M8TY3My6W9b0LaxydhF9haxzOZ0lt13PJuOlFSta0phCbvyAszJ0Doe1FUUxjMbafiisdlmLRFMi8mzQ3V1jMXxWK8LM5agPF3AVcWrOENPpb-EtVAqCPq9aQx-XJjha4_Ahs3J8jXt0jeMgskazBRDiiVgmCwV8J36dbtpuhnQadOXf_pN4ZjSaTolLgW7QKk"
         />
         <ServiceRow 
